@@ -1,6 +1,9 @@
 mod creature;
+mod brain;
 mod config;
 mod simulation;
+mod sense;
+mod utils;
 mod visualization;
 
 use bevy::prelude::*;
@@ -9,7 +12,9 @@ use simulation::SimulationPlugin;
 use visualization::VisualizationPlugin;
 
 fn main() {
-    dotenvy::dotenv().ok();
+    dotenvy::dotenv()
+        .or_else(|_| dotenvy::from_filename(".env.example"))
+        .ok();
 
     App::new()
         .insert_resource(SimulationConfig::from_env())

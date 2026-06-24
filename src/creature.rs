@@ -1,5 +1,8 @@
 use bevy::prelude::*;
 
+use crate::brain::Brain;
+use crate::sense::Vision;
+
 pub trait EnergyPosition {
     fn position(&self) -> Vec2;
     fn set_position(&mut self, position: Vec2);
@@ -49,6 +52,8 @@ pub struct Animal {
     pub energy: f32,
     pub radius: f32,
     pub color: Color,
+    pub vision: Vision,
+    pub brain: Brain,
 }
 
 impl EnergyPosition for Animal {

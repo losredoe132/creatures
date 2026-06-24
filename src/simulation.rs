@@ -1,15 +1,47 @@
 use bevy::prelude::*;
 use rand::Rng;
+use std::collections::{HashMap, HashSet};
 
+use crate::brain::{think_with_vision, Brain};
 use crate::config::{SimulationConfig, WorldBounds};
 use crate::creature::{Animal, EnergyPosition, Movable, Plant};
+use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot, Vision};
+use crate::utils::limit_speed_sigmoid;
 
 pub struct SimulationPlugin;
 
+#[derive(Resource, Default)]
+pub struct SharedGridCells {
+    pub cells: Vec<GridCellOccupancy>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct GridCellOccupancy {
+    pub cell: IVec2,
+    pub animal_count: usize,
+    pub plant_count: usize,
+}
+
+impl GridCellOccupancy {
+    pub fn total(&self) -> usize {
+        self.animal_count + self.plant_count
+    }
+}
+
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_world)
-            .add_systems(Update, move_animals);
+        app.insert_resource(SharedGridCells::default())
+            .add_systems(Startup, setup_world)
+            .add_systems(
+                Update,
+                (
+                    think_animals,
+                    move_animals,
+                    detect_shared_grid_cells,
+                    apply_shared_cell_rules,
+                )
+                    .chain(),
+            );
     }
 }
 
@@ -20,6 +52,8 @@ fn setup_world(mut commands: Commands, config: Res<SimulationConfig>) {
         energy: 100.0,
         radius: 20.0,
         color: Color::srgb(0.8, 0.2, 0.4),
+        vision: Vision::default(),
+        brain: Brain::default(),
     };
 
 
@@ -40,6 +74,52 @@ fn setup_world(mut commands: Commands, config: Res<SimulationConfig>) {
     commands.spawn(animal);
 }
 
+fn think_animals(
+    mut animals: Query<&mut Animal>,
+    plants: Query<&Plant>,
+    config: Res<SimulationConfig>,
+) {
+    let plants_snapshot: Vec<PlantSnapshot> = plants
+        .iter()
+        .map(|plant| PlantSnapshot {
+            position: plant.position,
+            energy: plant.energy,
+            radius: plant.radius,
+        })
+        .collect();
+
+    let animals_snapshot: Vec<AnimalSnapshot> = animals
+        .iter()
+        .map(|animal| AnimalSnapshot {
+            position: animal.position,
+            energy: animal.energy,
+            radius: animal.radius,
+        })
+        .collect();
+
+    let world = PerceptionWorld {
+        plants: &plants_snapshot,
+        animals: &animals_snapshot,
+    };
+
+    for mut animal in &mut animals {
+        let impulse = think_with_vision(
+            &animal.vision,
+            &animal.brain,
+            animal.position,
+            animal.velocity,
+            &world,
+        );
+        animal.apply_impulse(impulse);
+        let limited_velocity = limit_speed_sigmoid(
+            animal.velocity(),
+            config.tuning.animal_max_speed,
+            config.tuning.speed_sigmoid_steepness,
+        );
+        animal.set_velocity(limited_velocity);
+    }
+}
+
 fn move_animals(
     mut query: Query<(&mut Animal, &mut Transform)>,
     time: Res<Time>,
@@ -49,6 +129,143 @@ fn move_animals(
         transform.translation += animal.velocity().extend(0.0) * time.delta_secs();
         ensure_torodial_world(&mut transform.translation, &config.world_bounds);
         animal.set_position(transform.translation.xy());
+
+        let speed_ratio = (animal.velocity().length() / config.tuning.animal_speed_reference).max(0.0);
+        let speed_drain =
+            config.tuning.animal_speed_energy_drain_per_sec
+                * ((config.tuning.animal_speed_exponent * speed_ratio).exp() - 1.0);
+        let energy_drain =
+            (config.tuning.animal_base_energy_drain_per_sec + speed_drain) * time.delta_secs();
+        let updated_energy = (animal.energy() - energy_drain).max(0.0);
+        animal.set_energy(updated_energy);
+    }
+}
+
+fn detect_shared_grid_cells(
+    animals: Query<&Animal>,
+    plants: Query<&Plant>,
+    config: Res<SimulationConfig>,
+    mut shared_cells: ResMut<SharedGridCells>,
+) {
+    let mut counts: HashMap<IVec2, (usize, usize)> = HashMap::new();
+
+    for animal in &animals {
+        let cell = config
+            .grid_config
+            .world_to_cell(animal.position, &config.world_bounds);
+        let entry = counts.entry(cell).or_insert((0, 0));
+        entry.0 += 1;
+    }
+
+    for plant in &plants {
+        let cell = config
+            .grid_config
+            .world_to_cell(plant.position, &config.world_bounds);
+        let entry = counts.entry(cell).or_insert((0, 0));
+        entry.1 += 1;
+    }
+
+    let mut occupied = counts
+        .into_iter()
+        .filter_map(|(cell, (animal_count, plant_count))| {
+            let occupancy = GridCellOccupancy {
+                cell,
+                animal_count,
+                plant_count,
+            };
+            (occupancy.total() > 1).then_some(occupancy)
+        })
+        .collect::<Vec<_>>();
+    occupied.sort_by_key(|occupancy| (occupancy.cell.x, occupancy.cell.y));
+    shared_cells.cells = occupied;
+}
+
+fn apply_shared_cell_rules(
+    mut commands: Commands,
+    shared_cells: Res<SharedGridCells>,
+    config: Res<SimulationConfig>,
+    mut entities: ParamSet<(
+        Query<(Entity, &Animal)>,
+        Query<&mut Animal>,
+        Query<(Entity, &Plant)>,
+        Query<&mut Plant>,
+    )>,
+) {
+    if shared_cells.cells.is_empty() {
+        return;
+    }
+
+    let mut animals_by_cell: HashMap<IVec2, Vec<Entity>> = HashMap::new();
+    for (entity, animal) in &entities.p0() {
+        let cell = config
+            .grid_config
+            .world_to_cell(animal.position, &config.world_bounds);
+        animals_by_cell.entry(cell).or_default().push(entity);
+    }
+
+    let mut plants_by_cell: HashMap<IVec2, Vec<Entity>> = HashMap::new();
+    for (entity, plant) in &entities.p2() {
+        let cell = config
+            .grid_config
+            .world_to_cell(plant.position, &config.world_bounds);
+        plants_by_cell.entry(cell).or_default().push(entity);
+    }
+
+    let mut to_despawn: HashSet<Entity> = HashSet::new();
+
+    for occupancy in &shared_cells.cells {
+        let animals = animals_by_cell
+            .get(&occupancy.cell)
+            .cloned()
+            .unwrap_or_default();
+        let plants = plants_by_cell
+            .get(&occupancy.cell)
+            .cloned()
+            .unwrap_or_default();
+
+        if !animals.is_empty() && !plants.is_empty() {
+            let mut consumed_energy = 0.0;
+            for plant_entity in &plants {
+                if let Ok(mut plant) = entities.p3().get_mut(*plant_entity) {
+                    let taken = plant.energy.min(config.tuning.plant_consume_per_cell);
+                    plant.energy -= taken;
+                    consumed_energy += taken;
+                    if plant.energy <= 0.0 {
+                        to_despawn.insert(*plant_entity);
+                    }
+                }
+            }
+
+            let gain_per_animal = consumed_energy / animals.len() as f32;
+            for animal_entity in &animals {
+                if let Ok(mut animal) = entities.p1().get_mut(*animal_entity) {
+                    animal.energy += gain_per_animal;
+                }
+            }
+        }
+
+        if animals.len() > 1 {
+            for animal_entity in &animals {
+                if let Ok(mut animal) = entities.p1().get_mut(*animal_entity) {
+                    animal.energy = (animal.energy - config.tuning.animal_crowding_penalty).max(0.0);
+                }
+            }
+        }
+
+        if plants.len() > 1 {
+            for plant_entity in &plants {
+                if let Ok(mut plant) = entities.p3().get_mut(*plant_entity) {
+                    plant.energy = (plant.energy - config.tuning.plant_crowding_penalty).max(0.0);
+                    if plant.energy <= 0.0 {
+                        to_despawn.insert(*plant_entity);
+                    }
+                }
+            }
+        }
+    }
+
+    for entity in to_despawn {
+        commands.entity(entity).despawn();
     }
 }
 
