@@ -1,11 +1,9 @@
 use bevy::prelude::*;
 
+use crate::config::WorldBounds;
 use crate::creature::{Animal, EnergyPosition, Movable, Plant};
 
 pub struct SimulationPlugin;
-
-const WORLD_HALF_WIDTH: f32 = 400.0;
-const WORLD_HALF_HEIGHT: f32 = 250.0;
 
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
@@ -34,24 +32,28 @@ fn setup_world(mut commands: Commands) {
     commands.spawn(plant);
 }
 
-fn move_animals(mut query: Query<(&mut Animal, &mut Transform)>, time: Res<Time>) {
+fn move_animals(
+    mut query: Query<(&mut Animal, &mut Transform)>,
+    time: Res<Time>,
+    world_bounds: Res<WorldBounds>,
+) {
     for (mut animal, mut transform) in &mut query {
         transform.translation += animal.velocity().extend(0.0) * time.delta_secs();
-        ensure_torodial_world(&mut transform.translation);
+        ensure_torodial_world(&mut transform.translation, &world_bounds);
         animal.set_position(transform.translation.xy());
     }
 }
 
-fn ensure_torodial_world(translation: &mut Vec3) {
-    if translation.x < -WORLD_HALF_WIDTH {
-        translation.x = WORLD_HALF_WIDTH;
-    } else if translation.x > WORLD_HALF_WIDTH {
-        translation.x = -WORLD_HALF_WIDTH;
+fn ensure_torodial_world(translation: &mut Vec3, world_bounds: &WorldBounds) {
+    if translation.x < -world_bounds.half_width {
+        translation.x = world_bounds.half_width;
+    } else if translation.x > world_bounds.half_width {
+        translation.x = -world_bounds.half_width;
     }
 
-    if translation.y < -WORLD_HALF_HEIGHT {
-        translation.y = WORLD_HALF_HEIGHT;
-    } else if translation.y > WORLD_HALF_HEIGHT {
-        translation.y = -WORLD_HALF_HEIGHT;
+    if translation.y < -world_bounds.half_height {
+        translation.y = world_bounds.half_height;
+    } else if translation.y > world_bounds.half_height {
+        translation.y = -world_bounds.half_height;
     }
 }
