@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::sense::{PerceivedKind, PerceivedObject, Sense, Vision};
 
 pub trait BrainModel {
-    fn impulse(&self, sensed_objects: &[PerceivedObject]) -> Vec2;
+    fn acceleration(&self, sensed_objects: &[PerceivedObject]) -> Vec2;
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -20,7 +20,7 @@ impl Default for Brain {
 }
 
 impl BrainModel for Brain {
-    fn impulse(&self, sensed_objects: &[PerceivedObject]) -> Vec2 {
+    fn acceleration(&self, sensed_objects: &[PerceivedObject]) -> Vec2 {
         let nearest_plant = sensed_objects
             .iter()
             .filter(|object| object.kind == PerceivedKind::Plant)
@@ -52,5 +52,5 @@ pub fn think_with_vision(
             object
         })
         .collect();
-    brain.impulse(&sensed_offsets)
+    brain.acceleration(&sensed_offsets)
 }

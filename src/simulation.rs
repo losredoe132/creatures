@@ -131,6 +131,7 @@ fn sample_spawn_delay(rate_per_sec: f32, rng: &mut impl Rng) -> f32 {
 fn think_animals(
     mut animals: Query<&mut Animal>,
     plants: Query<&Plant>,
+    time: Res<Time>,
     config: Res<SimulationConfig>,
 ) {
     let plants_snapshot: Vec<PlantSnapshot> = plants
@@ -157,14 +158,14 @@ fn think_animals(
     };
 
     for mut animal in &mut animals {
-        let impulse = think_with_vision(
+        let acceleration = think_with_vision(
             &animal.vision,
             &animal.brain,
             animal.position,
             animal.velocity,
             &world,
         );
-        animal.apply_impulse(impulse);
+            animal.apply_acceleration(acceleration, time.delta_secs());
         let limited_velocity = limit_speed_sigmoid(
             animal.velocity(),
             config.tuning.animal_max_speed,

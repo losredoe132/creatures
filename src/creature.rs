@@ -13,8 +13,8 @@ pub trait EnergyPosition {
 pub trait Movable: EnergyPosition {
     fn velocity(&self) -> Vec2;
     fn set_velocity(&mut self, velocity: Vec2);
-    fn apply_impulse(&mut self, impulse: Vec2) {
-        let new_velocity = self.velocity() + impulse;
+    fn apply_acceleration(&mut self, acceleration: Vec2, delta_secs: f32) {
+        let new_velocity = self.velocity() + acceleration * delta_secs;
         self.set_velocity(new_velocity);
     }
 }
