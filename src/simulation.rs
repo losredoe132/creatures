@@ -55,11 +55,12 @@ impl Plugin for SimulationPlugin {
 }
 
 fn setup_world(mut commands: Commands, config: Res<SimulationConfig>) {
+    let animal_energy = 100.0;
     let animal = Animal {
         position: Vec2::new(0.0, 0.0),
         velocity: Vec2::new(100.0, 1.0),
-        energy: 100.0,
-        radius: 20.0,
+        energy: animal_energy,
+        size: animal_size_from_energy(animal_energy, &config),
         color: Color::srgb(0.8, 0.2, 0.4),
         vision: Vision::default(),
         brain: Brain::default(),
@@ -105,13 +106,14 @@ fn spawn_random_plant(
     rng: &mut impl Rng,
     source: &str,
 ) {
+    let energy = 60.0;
     let plant = Plant {
         position: Vec2::new(
             rng.gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),
             rng.gen_range(-config.world_bounds.half_height..config.world_bounds.half_height),
         ),
-        energy: 60.0,
-        radius: 14.0,
+        energy,
+        size: plant_size_from_energy(energy, config),
         color: Color::srgb(0.3, 0.6, 0.2),
     };
     info!(
@@ -136,7 +138,7 @@ fn think_animals(
         .map(|plant| PlantSnapshot {
             position: plant.position,
             energy: plant.energy,
-            radius: plant.radius,
+            radius: plant.size,
         })
         .collect();
 
@@ -145,7 +147,7 @@ fn think_animals(
         .map(|animal| AnimalSnapshot {
             position: animal.position,
             energy: animal.energy,
-            radius: animal.radius,
+            radius: animal.size,
         })
         .collect();
 
@@ -190,6 +192,7 @@ fn move_animals(
             (config.tuning.animal_base_energy_drain_per_sec + speed_drain) * time.delta_secs();
         let updated_energy = (animal.energy() - energy_drain).max(0.0);
         animal.set_energy(updated_energy);
+        animal.size = animal_size_from_energy(animal.energy, &config);
     }
 }
 
@@ -205,6 +208,7 @@ fn grow_plants(
 
     for mut plant in &mut plants {
         plant.energy = (plant.energy + growth).min(config.tuning.plant_max_energy);
+        plant.size = plant_size_from_energy(plant.energy, &config);
     }
 }
 
@@ -281,23 +285,27 @@ fn apply_shared_cell_rules(
     let mut to_despawn: HashSet<Entity> = HashSet::new();
 
     for occupancy in &shared_cells.cells {
+        let cell = occupancy.cell;
         let animals = animals_by_cell
-            .get(&occupancy.cell)
+            .get(&cell)
             .cloned()
             .unwrap_or_default();
         let plants = plants_by_cell
-            .get(&occupancy.cell)
+            .get(&cell)
             .cloned()
             .unwrap_or_default();
 
         if !animals.is_empty() && !plants.is_empty() {
             let mut consumed_energy = 0.0;
+            let mut depleted_plants = 0usize;
             for plant_entity in &plants {
                 if let Ok(mut plant) = entities.p3().get_mut(*plant_entity) {
                     let taken = plant.energy.min(config.tuning.plant_consume_per_cell);
                     plant.energy -= taken;
+                    plant.size = plant_size_from_energy(plant.energy, &config);
                     consumed_energy += taken;
                     if plant.energy <= 0.0 {
+                        depleted_plants += 1;
                         to_despawn.insert(*plant_entity);
                     }
                 }
@@ -307,33 +315,83 @@ fn apply_shared_cell_rules(
             for animal_entity in &animals {
                 if let Ok(mut animal) = entities.p1().get_mut(*animal_entity) {
                     animal.energy += gain_per_animal;
+                    animal.size = animal_size_from_energy(animal.energy, &config);
                 }
             }
+
+            info!(
+                "cell_event type=feeding cell=({}, {}) animals={} plants={} consumed_energy={:.2} gain_per_animal={:.2} depleted_plants={}",
+                cell.x,
+                cell.y,
+                animals.len(),
+                plants.len(),
+                consumed_energy,
+                gain_per_animal,
+                depleted_plants
+            );
         }
 
         if animals.len() > 1 {
             for animal_entity in &animals {
                 if let Ok(mut animal) = entities.p1().get_mut(*animal_entity) {
                     animal.energy = (animal.energy - config.tuning.animal_crowding_penalty).max(0.0);
+                    animal.size = animal_size_from_energy(animal.energy, &config);
                 }
             }
+
+            info!(
+                "cell_event type=animal_crowding cell=({}, {}) animals={} penalty_per_animal={:.2}",
+                cell.x,
+                cell.y,
+                animals.len(),
+                config.tuning.animal_crowding_penalty
+            );
         }
 
         if plants.len() > 1 {
+            let mut depleted_plants = 0usize;
             for plant_entity in &plants {
                 if let Ok(mut plant) = entities.p3().get_mut(*plant_entity) {
                     plant.energy = (plant.energy - config.tuning.plant_crowding_penalty).max(0.0);
+                    plant.size = plant_size_from_energy(plant.energy, &config);
                     if plant.energy <= 0.0 {
+                        depleted_plants += 1;
                         to_despawn.insert(*plant_entity);
                     }
                 }
             }
+
+            info!(
+                "cell_event type=plant_crowding cell=({}, {}) plants={} penalty_per_plant={:.2} depleted_plants={}",
+                cell.x,
+                cell.y,
+                plants.len(),
+                config.tuning.plant_crowding_penalty,
+                depleted_plants
+            );
         }
     }
 
+    if !to_despawn.is_empty() {
+        info!("cell_event type=despawn_plants count={}", to_despawn.len());
+    }
     for entity in to_despawn {
         commands.entity(entity).despawn();
     }
+}
+
+fn plant_size_from_energy(energy: f32, config: &SimulationConfig) -> f32 {
+    let clamped_energy = energy.max(0.0);
+    let size = config.tuning.plant_base_size
+        + config.tuning.plant_size_per_sqrt_energy * clamped_energy.sqrt();
+    size.max(1.0)
+}
+
+fn animal_size_from_energy(energy: f32, config: &SimulationConfig) -> f32 {
+    let clamped_energy = energy.max(0.0);
+    let size = config.tuning.animal_base_size
+        + config.tuning.animal_size_per_sqrt_energy * clamped_energy.sqrt();
+    size.max(1.0)
 }
 
 fn ensure_torodial_world(translation: &mut Vec3, world_bounds: &WorldBounds) {

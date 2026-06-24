@@ -12,7 +12,9 @@ impl Plugin for VisualizationPlugin {
             .add_systems(Update, update_time_display)
             .add_systems(Update, draw_grid_overlay)
             .add_systems(Update, attach_animal_visuals)
-            .add_systems(Update, attach_plant_visuals);
+            .add_systems(Update, attach_plant_visuals)
+            .add_systems(Update, update_animal_visual_sizes)
+            .add_systems(Update, update_plant_visual_sizes);
     }
 }
 
@@ -104,10 +106,17 @@ fn attach_animal_visuals(
 ) {
     for (entity, animal) in &query {
         commands.entity(entity).insert((
-            Mesh2d(meshes.add(Circle::new(animal.radius))),
+            Mesh2d(meshes.add(Circle::new(1.0))),
             MeshMaterial2d(materials.add(animal.color)),
-            Transform::from_translation(animal.position.extend(0.0)),
+            Transform::from_translation(animal.position.extend(0.0))
+                .with_scale(Vec3::splat(animal.size)),
         ));
+    }
+}
+
+fn update_animal_visual_sizes(mut query: Query<(&Animal, &mut Transform), Changed<Animal>>) {
+    for (animal, mut transform) in &mut query {
+        transform.scale = Vec3::splat(animal.size);
     }
 }
 
@@ -119,9 +128,16 @@ fn attach_plant_visuals(
 ) {
     for (entity, plant) in &query {
         commands.entity(entity).insert((
-            Mesh2d(meshes.add(Circle::new(plant.radius))),
+            Mesh2d(meshes.add(Circle::new(1.0))),
             MeshMaterial2d(materials.add(plant.color)),
-            Transform::from_translation(plant.position.extend(0.0)),
+            Transform::from_translation(plant.position.extend(0.0))
+                .with_scale(Vec3::splat(plant.size)),
         ));
+    }
+}
+
+fn update_plant_visual_sizes(mut query: Query<(&Plant, &mut Transform), Changed<Plant>>) {
+    for (plant, mut transform) in &mut query {
+        transform.scale = Vec3::splat(plant.size);
     }
 }

@@ -23,7 +23,7 @@ pub trait Movable: EnergyPosition {
 pub struct Plant {
     pub position: Vec2,
     pub energy: f32,
-    pub radius: f32,
+    pub size: f32,
     pub color: Color,
 }
 
@@ -50,7 +50,7 @@ pub struct Animal {
     pub position: Vec2,
     pub velocity: Vec2,
     pub energy: f32,
-    pub radius: f32,
+    pub size: f32,
     pub color: Color,
     pub vision: Vision,
     pub brain: Brain,

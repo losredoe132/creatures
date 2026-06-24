@@ -45,5 +45,12 @@ pub fn think_with_vision(
     world: &crate::sense::PerceptionWorld<'_>,
 ) -> Vec2 {
     let sensed = vision.sense(origin, forward, world);
-    brain.impulse(&sensed)
+    let sensed_offsets: Vec<PerceivedObject> = sensed
+        .into_iter()
+        .map(|mut object| {
+            object.position -= origin;
+            object
+        })
+        .collect();
+    brain.impulse(&sensed_offsets)
 }
