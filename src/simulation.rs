@@ -15,6 +15,12 @@ pub struct SharedGridCells {
     pub cells: Vec<GridCellOccupancy>,
 }
 
+#[derive(Resource, Default)]
+struct PlantSpawnClock {
+    time_until_next: f32,
+    initialized: bool,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct GridCellOccupancy {
     pub cell: IVec2,
@@ -31,12 +37,15 @@ impl GridCellOccupancy {
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(SharedGridCells::default())
+            .insert_resource(PlantSpawnClock::default())
             .add_systems(Startup, setup_world)
             .add_systems(
                 Update,
                 (
                     think_animals,
                     move_animals,
+                    grow_plants,
+                    random_spawn_plants,
                     detect_shared_grid_cells,
                     apply_shared_cell_rules,
                 )
@@ -59,19 +68,62 @@ fn setup_world(mut commands: Commands, config: Res<SimulationConfig>) {
 
     let mut rng = rand::thread_rng();
     for _ in 0..config.spawn_config.n_plants {
-        let plant = Plant {
-            position: Vec2::new(
-                rng.gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),
-                rng.gen_range(-config.world_bounds.half_height..config.world_bounds.half_height),
-            ),
-            energy: 60.0,
-            radius: 14.0,
-            color: Color::srgb(0.3, 0.6, 0.2),
-        };
-        commands.spawn(plant);
+        spawn_random_plant(&mut commands, &config, &mut rng, "startup");
     }
 
     commands.spawn(animal);
+}
+
+fn random_spawn_plants(
+    mut commands: Commands,
+    time: Res<Time>,
+    config: Res<SimulationConfig>,
+    mut spawn_clock: ResMut<PlantSpawnClock>,
+) {
+    let rate = config.tuning.plant_spawn_rate_per_sec;
+    if rate <= 0.0 {
+        spawn_clock.initialized = false;
+        return;
+    }
+
+    let mut rng = rand::thread_rng();
+    if !spawn_clock.initialized {
+        spawn_clock.time_until_next = sample_spawn_delay(rate, &mut rng);
+        spawn_clock.initialized = true;
+    }
+
+    spawn_clock.time_until_next -= time.delta_secs();
+    while spawn_clock.time_until_next <= 0.0 {
+        spawn_random_plant(&mut commands, &config, &mut rng, "random");
+        spawn_clock.time_until_next += sample_spawn_delay(rate, &mut rng);
+    }
+}
+
+fn spawn_random_plant(
+    commands: &mut Commands,
+    config: &SimulationConfig,
+    rng: &mut impl Rng,
+    source: &str,
+) {
+    let plant = Plant {
+        position: Vec2::new(
+            rng.gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),
+            rng.gen_range(-config.world_bounds.half_height..config.world_bounds.half_height),
+        ),
+        energy: 60.0,
+        radius: 14.0,
+        color: Color::srgb(0.3, 0.6, 0.2),
+    };
+    info!(
+        "plant_spawn source={} x={:.2} y={:.2}",
+        source, plant.position.x, plant.position.y
+    );
+    commands.spawn(plant);
+}
+
+fn sample_spawn_delay(rate_per_sec: f32, rng: &mut impl Rng) -> f32 {
+    let uniform = rng.gen_range(f32::EPSILON..1.0);
+    -uniform.ln() / rate_per_sec
 }
 
 fn think_animals(
@@ -138,6 +190,21 @@ fn move_animals(
             (config.tuning.animal_base_energy_drain_per_sec + speed_drain) * time.delta_secs();
         let updated_energy = (animal.energy() - energy_drain).max(0.0);
         animal.set_energy(updated_energy);
+    }
+}
+
+fn grow_plants(
+    mut plants: Query<&mut Plant>,
+    time: Res<Time>,
+    config: Res<SimulationConfig>,
+) {
+    let growth = config.tuning.plant_growth_per_sec * time.delta_secs();
+    if growth <= 0.0 {
+        return;
+    }
+
+    for mut plant in &mut plants {
+        plant.energy = (plant.energy + growth).min(config.tuning.plant_max_energy);
     }
 }
 

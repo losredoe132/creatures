@@ -21,6 +21,9 @@ pub struct GridConfig {
 #[derive(Resource, Debug, Clone, Copy)]
 pub struct TuningConfig {
     pub plant_consume_per_cell: f32,
+    pub plant_growth_per_sec: f32,
+    pub plant_max_energy: f32,
+    pub plant_spawn_rate_per_sec: f32,
     pub animal_crowding_penalty: f32,
     pub plant_crowding_penalty: f32,
     pub animal_base_energy_drain_per_sec: f32,
@@ -57,6 +60,9 @@ impl TuningConfig {
     pub fn from_env() -> Self {
         Self {
             plant_consume_per_cell: read_env_f32("PLANT_CONSUME_PER_CELL", 20.0),
+            plant_growth_per_sec: read_env_f32("PLANT_GROWTH_PER_SEC", 0.05),
+            plant_max_energy: read_env_f32("PLANT_MAX_ENERGY", 120.0),
+            plant_spawn_rate_per_sec: read_env_f32("PLANT_SPAWN_RATE_PER_SEC", 0.1),
             animal_crowding_penalty: read_env_f32("ANIMAL_CROWDING_PENALTY", 1.0),
             plant_crowding_penalty: read_env_f32("PLANT_CROWDING_PENALTY", 0.5),
             animal_base_energy_drain_per_sec: read_env_f32(
