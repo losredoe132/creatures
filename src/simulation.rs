@@ -3,24 +3,17 @@ use rand::Rng;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 use std::collections::HashMap;
-use std::fs::{OpenOptions, create_dir_all};
-use std::io::Write;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::brain::{think_with_vision, steering_to_acceleration};
 use crate::config::{SimulationConfig, WorldBounds};
 use crate::creature::{Animal, EnergyPosition, Movable, Plant};
+use crate::logging::{ConsoleBackend, SimulationLogger, TextFileBackend};
 use crate::mlp::Genome;
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot, Vision};
 use crate::utils::limit_speed_sigmoid;
 
 pub struct SimulationPlugin;
-
-#[derive(Resource)]
-struct SimulationLog {
-    start_timestamp_secs: u64,
-    file: Option<std::fs::File>,
-}
 
 #[derive(Resource, Default)]
 struct PlantSpawnClock {
@@ -70,43 +63,21 @@ fn initialize_simulation_log(mut commands: Commands) {
         .and_then(|s| s.parse::<u64>().ok())
         .unwrap_or_else(|| rand::random::<u64>());
 
-    let file = match create_dir_all("logs") {
-        Ok(()) => {
-            let path = format!("logs/simulation_{}.log", start_timestamp_secs);
-            OpenOptions::new().create(true).append(true).open(path).ok()
-        }
-        Err(_) => None,
-    };
-
-    let mut log = SimulationLog {
-        start_timestamp_secs,
-        file,
-    };
-    write_simulation_log(
-        &mut log,
-        &format!("simulation_start start_ts={} seed={}", start_timestamp_secs, seed),
-    );
-    commands.insert_resource(log);
-    commands.insert_resource(SimulationRng(StdRng::seed_from_u64(seed)));
-}
-
-fn write_simulation_log(log: &mut SimulationLog, message: &str) {
-    info!("{}", message);
-    if let Some(file) = &mut log.file {
-        let _ = writeln!(
-            file,
-            "[simulation_start_ts={}] {}",
-            log.start_timestamp_secs,
-            message
-        );
-        let _ = file.flush();
+    let mut logger = SimulationLogger::new(start_timestamp_secs);
+    logger.add_backend(ConsoleBackend);
+    if let Some(backend) = TextFileBackend::new(&format!("logs/simulation_{}.log", start_timestamp_secs)) {
+        logger.add_backend(backend);
     }
+    logger.log(&format!("simulation_start start_ts={} seed={}", start_timestamp_secs, seed));
+
+    commands.insert_resource(logger);
+    commands.insert_resource(SimulationRng(StdRng::seed_from_u64(seed)));
 }
 
 fn setup_world(
     mut commands: Commands,
     time: Res<Time>,
-    mut log: ResMut<SimulationLog>,
+    mut log: ResMut<SimulationLogger>,
     config: Res<SimulationConfig>,
     mut rng: ResMut<SimulationRng>,
 ) {
@@ -128,7 +99,7 @@ fn setup_world(
 
 
     for _ in 0..config.spawn_config.n_plants {
-        spawn_random_plant(&mut commands, &config, &mut rng.0, "startup", &mut log);
+        spawn_random_plant(&mut commands, &config, &mut rng.0, "startup", &mut *log);
     }
 
     commands.spawn(animal);
@@ -138,7 +109,7 @@ fn random_spawn_plants(
     mut commands: Commands,
     time: Res<Time>,
     config: Res<SimulationConfig>,
-    mut log: ResMut<SimulationLog>,
+    mut log: ResMut<SimulationLogger>,
     mut spawn_clock: ResMut<PlantSpawnClock>,
     mut rng: ResMut<SimulationRng>,
 ) {
@@ -155,7 +126,7 @@ fn random_spawn_plants(
 
     spawn_clock.time_until_next -= time.delta_secs();
     while spawn_clock.time_until_next <= 0.0 {
-        spawn_random_plant(&mut commands, &config, &mut rng.0, "random", &mut log);
+        spawn_random_plant(&mut commands, &config, &mut rng.0, "random", &mut *log);
         spawn_clock.time_until_next += sample_spawn_delay(rate, &mut rng.0);
     }
 }
@@ -164,7 +135,7 @@ fn random_spawn_animals(
     mut commands: Commands,
     time: Res<Time>,
     config: Res<SimulationConfig>,
-    mut log: ResMut<SimulationLog>,
+    mut log: ResMut<SimulationLogger>,
     mut spawn_clock: ResMut<AnimalSpawnClock>,
     mut rng: ResMut<SimulationRng>,
 ) {
@@ -187,7 +158,7 @@ fn random_spawn_animals(
             &mut rng.0,
             "random",
             time.elapsed_secs(),
-            &mut log,
+            &mut *log,
         );
         spawn_clock.time_until_next += sample_spawn_delay(rate, &mut rng.0);
     }
@@ -198,7 +169,7 @@ fn spawn_random_plant(
     config: &SimulationConfig,
     rng: &mut impl Rng,
     source: &str,
-    log: &mut SimulationLog,
+    log: &mut SimulationLogger,
 ) {
     let energy = 10.0;
     let plant = Plant {
@@ -210,13 +181,10 @@ fn spawn_random_plant(
         size: plant_size_from_energy(energy, config),
         color: Color::srgb(0.3, 0.6, 0.2),
     };
-    write_simulation_log(
-        log,
-        &format!(
+    log.log(&format!(
             "plant_spawn source={} x={:.2} y={:.2}",
             source, plant.position.x, plant.position.y
-        ),
-    );
+        ));
     commands.spawn(plant);
 }
 
@@ -226,7 +194,7 @@ fn spawn_random_animal(
     rng: &mut impl Rng,
     source: &str,
     spawn_at: f32,
-    log: &mut SimulationLog,
+    log: &mut SimulationLogger,
 ) {
     let energy = config.spawn_config.animal_spawn_energy;
     let animal = Animal {
@@ -246,13 +214,10 @@ fn spawn_random_animal(
         spawn_at,
         despawn_at: None,
     };
-    write_simulation_log(
-        log,
-        &format!(
+    log.log(&format!(
             "animal_spawn source={} x={:.2} y={:.2}",
             source, animal.position.x, animal.position.y
-        ),
-    );
+        ));
     commands.spawn(animal);
 }
 
@@ -362,7 +327,7 @@ fn reproduce_animals(
     mut commands: Commands,
     mut animals: Query<&mut Animal>,
     time: Res<Time>,
-    mut log: ResMut<SimulationLog>,
+    mut log: ResMut<SimulationLogger>,
     config: Res<SimulationConfig>,
     mut rng: ResMut<SimulationRng>,
 ) {
@@ -422,14 +387,11 @@ fn reproduce_animals(
     }
 
     if reproduction_count > 0 {
-        write_simulation_log(
-            &mut log,
-            &format!(
-                "animal_reproduction parents={} offspring={}",
-                reproduction_count,
-                reproduction_count * 2
-            ),
-        );
+        log.log(&format!(
+            "animal_reproduction parents={} offspring={}",
+            reproduction_count,
+            reproduction_count * 2
+        ));
     }
 }
 
@@ -437,38 +399,32 @@ fn despawn_starved_animals(
     mut commands: Commands,
     time: Res<Time>,
     mut animals: Query<(Entity, &mut Animal)>,
-    mut log: ResMut<SimulationLog>,
+    mut log: ResMut<SimulationLogger>,
 ) {
     let mut despawn_count = 0usize;
     for (entity, mut animal) in &mut animals {
         if animal.energy <= 0.0 {
             animal.despawn_at = Some(time.elapsed_secs());
-            write_simulation_log(
-                &mut log,
-                &format!(
-                    "animal_despawn reason=starvation spawn_at={:.3} despawn_at={:.3} genome={:?}",
-                    animal.spawn_at,
-                    animal.despawn_at.unwrap_or_default(),
-                    animal.genome.genes
-                ),
-            );
+            log.log(&format!(
+                "animal_despawn reason=starvation spawn_at={:.3} despawn_at={:.3} genome={:?}",
+                animal.spawn_at,
+                animal.despawn_at.unwrap_or_default(),
+                animal.genome.genes
+            ));
             commands.entity(entity).despawn();
             despawn_count += 1;
         }
     }
 
     if despawn_count > 0 {
-        write_simulation_log(
-            &mut log,
-            &format!("animal_starvation_despawn count={}", despawn_count),
-        );
+        log.log(&format!("animal_starvation_despawn count={}", despawn_count));
     }
 }
 
 fn feed_animals_on_plant_collision(
     mut commands: Commands,
     config: Res<SimulationConfig>,
-    mut log: ResMut<SimulationLog>,
+    mut log: ResMut<SimulationLogger>,
     mut entities: ParamSet<(
         Query<(Entity, &Animal)>,
         Query<&mut Animal>,
@@ -553,23 +509,17 @@ fn feed_animals_on_plant_collision(
     }
 
     if !to_despawn.is_empty() {
-        write_simulation_log(
-            &mut log,
-            &format!("collision_event type=despawn_plants count={}", to_despawn.len()),
-        );
+        log.log(&format!("collision_event type=despawn_plants count={}", to_despawn.len()));
     }
 
-    write_simulation_log(
-        &mut log,
-        &format!(
-            "collision_event type=feeding collisions={} fed_animals={} touched_plants={} consumed_energy={:.2} depleted_plants={}",
-            collision_count,
-            animal_gain_by_entity.len(),
-            plant_taken_by_entity.len(),
-            consumed_energy,
-            depleted_plants
-        ),
-    );
+    log.log(&format!(
+        "collision_event type=feeding collisions={} fed_animals={} touched_plants={} consumed_energy={:.2} depleted_plants={}",
+        collision_count,
+        animal_gain_by_entity.len(),
+        plant_taken_by_entity.len(),
+        consumed_energy,
+        depleted_plants
+    ));
 
     for entity in to_despawn {
         commands.entity(entity).despawn();

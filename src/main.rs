@@ -1,6 +1,7 @@
 mod creature;
 mod brain;
 mod config;
+mod logging;
 mod mlp;
 mod simulation;
 mod sense;
