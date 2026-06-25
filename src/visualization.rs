@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 
+use crate::brain::think_with_vision;
 use crate::config::SimulationConfig;
 use crate::creature::{Animal, Plant};
-use crate::simulation::SharedGridCells;
+use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
 
 pub struct VisualizationPlugin;
 
@@ -10,8 +11,8 @@ impl Plugin for VisualizationPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup_visualization)
             .add_systems(Update, update_time_display)
-            .add_systems(Update, draw_grid_overlay)
             .add_systems(Update, draw_animal_vision_cones)
+            .add_systems(Update, draw_animal_acceleration_arrows)
             .add_systems(Update, attach_animal_visuals)
             .add_systems(Update, attach_plant_visuals)
             .add_systems(Update, update_animal_visual_sizes)
@@ -45,44 +46,6 @@ fn update_time_display(mut query: Query<&mut Text, With<TimeDisplay>>, time: Res
     for mut text in &mut query {
         let elapsed = time.elapsed_secs();
         **text = format!("Time: {:.1}s", elapsed);
-    }
-}
-
-fn draw_grid_overlay(
-    mut gizmos: Gizmos,
-    config: Res<SimulationConfig>,
-    shared_cells: Res<SharedGridCells>,
-) {
-    let world_bounds = &config.world_bounds;
-    let grid = &config.grid_config;
-    let dims = grid.dimensions(world_bounds);
-    let cell_size = grid.cell_size(world_bounds);
-
-    let left = -world_bounds.half_width;
-    let right = world_bounds.half_width;
-    let bottom = -world_bounds.half_height;
-    let top = world_bounds.half_height;
-    let line_color = Color::srgba(0.7, 0.7, 0.75, 0.35);
-
-    for col in 0..=dims.x {
-        let x = (left + col as f32 * cell_size.x).min(right);
-        gizmos.line_2d(Vec2::new(x, bottom), Vec2::new(x, top), line_color);
-    }
-
-    for row in 0..=dims.y {
-        let y = (bottom + row as f32 * cell_size.y).min(top);
-        gizmos.line_2d(Vec2::new(left, y), Vec2::new(right, y), line_color);
-    }
-
-    let occupied_color = Color::srgba(1.0, 0.4, 0.2, 0.85);
-    for occupancy in &shared_cells.cells {
-        let center = grid.cell_center(occupancy.cell, world_bounds);
-        draw_cell_outline(
-            &mut gizmos,
-            center,
-            cell_size,
-            occupied_color,
-        );
     }
 }
 
@@ -144,17 +107,72 @@ fn draw_vision_cone(
     gizmos.line_2d(origin, previous, edge_color);
 }
 
-fn draw_cell_outline(gizmos: &mut Gizmos, center: Vec2, size: Vec2, color: Color) {
-    let half = size * 0.5;
-    let bl = Vec2::new(center.x - half.x, center.y - half.y);
-    let br = Vec2::new(center.x + half.x, center.y - half.y);
-    let tr = Vec2::new(center.x + half.x, center.y + half.y);
-    let tl = Vec2::new(center.x - half.x, center.y + half.y);
+fn draw_animal_acceleration_arrows(
+    mut gizmos: Gizmos,
+    animals: Query<&Animal>,
+    plants: Query<&Plant>,
+) {
+    let plants_snapshot: Vec<PlantSnapshot> = plants
+        .iter()
+        .map(|plant| PlantSnapshot {
+            position: plant.position,
+            energy: plant.energy,
+            radius: plant.size,
+        })
+        .collect();
 
-    gizmos.line_2d(bl, br, color);
-    gizmos.line_2d(br, tr, color);
-    gizmos.line_2d(tr, tl, color);
-    gizmos.line_2d(tl, bl, color);
+    let animals_snapshot: Vec<AnimalSnapshot> = animals
+        .iter()
+        .map(|animal| AnimalSnapshot {
+            position: animal.position,
+            energy: animal.energy,
+            radius: animal.size,
+        })
+        .collect();
+
+    let world = PerceptionWorld {
+        plants: &plants_snapshot,
+        animals: &animals_snapshot,
+    };
+
+    let arrow_color = Color::srgba(1.0, 0.95, 0.2, 0.9);
+    for animal in &animals {
+        let acceleration = think_with_vision(
+            &animal.vision,
+            &animal.genome,
+            animal.position,
+            animal.velocity,
+            &world,
+        );
+
+        let magnitude = acceleration.length();
+        if magnitude <= f32::EPSILON {
+            continue;
+        }
+
+        let direction = acceleration / magnitude;
+        let arrow_len = (magnitude * 0.04).clamp(6.0, 20.0);
+        let start = animal.position;
+        let end = start + direction * arrow_len;
+        draw_arrow_2d(&mut gizmos, start, end, arrow_color);
+    }
+}
+
+fn draw_arrow_2d(gizmos: &mut Gizmos, start: Vec2, end: Vec2, color: Color) {
+    gizmos.line_2d(start, end, color);
+
+    let shaft = end - start;
+    let len = shaft.length();
+    if len <= f32::EPSILON {
+        return;
+    }
+
+    let dir = shaft / len;
+    let head_len = (len * 0.35).clamp(2.0, 6.0);
+    let left = Vec2::from_angle(dir.to_angle() + 2.6) * head_len;
+    let right = Vec2::from_angle(dir.to_angle() - 2.6) * head_len;
+    gizmos.line_2d(end, end + left, color);
+    gizmos.line_2d(end, end + right, color);
 }
 
 fn attach_animal_visuals(

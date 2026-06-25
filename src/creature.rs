@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::brain::Brain;
+use crate::mlp::Genome;
 use crate::sense::Vision;
 
 pub trait EnergyPosition {
@@ -53,7 +53,9 @@ pub struct Animal {
     pub size: f32,
     pub color: Color,
     pub vision: Vision,
-    pub brain: Brain,
+    pub genome: Genome,
+    pub spawn_at: f32,
+    pub despawn_at: Option<f32>,
 }
 
 impl EnergyPosition for Animal {

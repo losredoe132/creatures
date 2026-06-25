@@ -1,18 +1,23 @@
 use bevy::prelude::*;
 use rand::Rng;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+use std::fs::{OpenOptions, create_dir_all};
+use std::io::Write;
+use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::brain::{think_with_vision, Brain};
+use crate::brain::think_with_vision;
 use crate::config::{SimulationConfig, WorldBounds};
 use crate::creature::{Animal, EnergyPosition, Movable, Plant};
+use crate::mlp::Genome;
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot, Vision};
 use crate::utils::limit_speed_sigmoid;
 
 pub struct SimulationPlugin;
 
-#[derive(Resource, Default)]
-pub struct SharedGridCells {
-    pub cells: Vec<GridCellOccupancy>,
+#[derive(Resource)]
+struct SimulationLog {
+    start_timestamp_secs: u64,
+    file: Option<std::fs::File>,
 }
 
 #[derive(Resource, Default)]
@@ -21,24 +26,17 @@ struct PlantSpawnClock {
     initialized: bool,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct GridCellOccupancy {
-    pub cell: IVec2,
-    pub animal_count: usize,
-    pub plant_count: usize,
-}
-
-impl GridCellOccupancy {
-    pub fn total(&self) -> usize {
-        self.animal_count + self.plant_count
-    }
+#[derive(Resource, Default)]
+struct AnimalSpawnClock {
+    time_until_next: f32,
+    initialized: bool,
 }
 
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(SharedGridCells::default())
-            .insert_resource(PlantSpawnClock::default())
-            .add_systems(Startup, setup_world)
+        app.insert_resource(PlantSpawnClock::default())
+            .insert_resource(AnimalSpawnClock::default())
+            .add_systems(Startup, (initialize_simulation_log, setup_world).chain())
             .add_systems(
                 Update,
                 (
@@ -46,30 +44,77 @@ impl Plugin for SimulationPlugin {
                     move_animals,
                     grow_plants,
                     random_spawn_plants,
-                    detect_shared_grid_cells,
-                    apply_shared_cell_rules,
+                    random_spawn_animals,
+                    feed_animals_on_plant_collision,
+                    despawn_starved_animals,
+                    reproduce_animals,
                 )
                     .chain(),
             );
     }
 }
 
-fn setup_world(mut commands: Commands, config: Res<SimulationConfig>) {
-    let animal_energy = 100.0;
+fn initialize_simulation_log(mut commands: Commands) {
+    let start_timestamp_secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    let file = match create_dir_all("logs") {
+        Ok(()) => {
+            let path = format!("logs/simulation_{}.log", start_timestamp_secs);
+            OpenOptions::new().create(true).append(true).open(path).ok()
+        }
+        Err(_) => None,
+    };
+
+    let mut log = SimulationLog {
+        start_timestamp_secs,
+        file,
+    };
+    write_simulation_log(
+        &mut log,
+        &format!("simulation_start start_ts={}", start_timestamp_secs),
+    );
+    commands.insert_resource(log);
+}
+
+fn write_simulation_log(log: &mut SimulationLog, message: &str) {
+    info!("{}", message);
+    if let Some(file) = &mut log.file {
+        let _ = writeln!(
+            file,
+            "[simulation_start_ts={}] {}",
+            log.start_timestamp_secs,
+            message
+        );
+        let _ = file.flush();
+    }
+}
+
+fn setup_world(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut log: ResMut<SimulationLog>,
+    config: Res<SimulationConfig>,
+) {
+    let animal_energy = config.spawn_config.animal_spawn_energy;
+    let mut rng = rand::thread_rng();
     let animal = Animal {
         position: Vec2::new(0.0, 0.0),
-        velocity: Vec2::new(100.0, 1.0),
+        velocity: Vec2::new(0.0, 0.0),
         energy: animal_energy,
         size: animal_size_from_energy(animal_energy, &config),
         color: Color::srgb(0.8, 0.2, 0.4),
         vision: Vision::default(),
-        brain: Brain::default(),
+        genome: Genome::random(&mut rng),
+        spawn_at: time.elapsed_secs(),
+        despawn_at: None,
     };
 
 
-    let mut rng = rand::thread_rng();
     for _ in 0..config.spawn_config.n_plants {
-        spawn_random_plant(&mut commands, &config, &mut rng, "startup");
+        spawn_random_plant(&mut commands, &config, &mut rng, "startup", &mut log);
     }
 
     commands.spawn(animal);
@@ -79,6 +124,7 @@ fn random_spawn_plants(
     mut commands: Commands,
     time: Res<Time>,
     config: Res<SimulationConfig>,
+    mut log: ResMut<SimulationLog>,
     mut spawn_clock: ResMut<PlantSpawnClock>,
 ) {
     let rate = config.tuning.plant_spawn_rate_per_sec;
@@ -95,7 +141,40 @@ fn random_spawn_plants(
 
     spawn_clock.time_until_next -= time.delta_secs();
     while spawn_clock.time_until_next <= 0.0 {
-        spawn_random_plant(&mut commands, &config, &mut rng, "random");
+        spawn_random_plant(&mut commands, &config, &mut rng, "random", &mut log);
+        spawn_clock.time_until_next += sample_spawn_delay(rate, &mut rng);
+    }
+}
+
+fn random_spawn_animals(
+    mut commands: Commands,
+    time: Res<Time>,
+    config: Res<SimulationConfig>,
+    mut log: ResMut<SimulationLog>,
+    mut spawn_clock: ResMut<AnimalSpawnClock>,
+) {
+    let rate = config.tuning.animal_spawn_rate_per_sec;
+    if rate <= 0.0 {
+        spawn_clock.initialized = false;
+        return;
+    }
+
+    let mut rng = rand::thread_rng();
+    if !spawn_clock.initialized {
+        spawn_clock.time_until_next = sample_spawn_delay(rate, &mut rng);
+        spawn_clock.initialized = true;
+    }
+
+    spawn_clock.time_until_next -= time.delta_secs();
+    while spawn_clock.time_until_next <= 0.0 {
+        spawn_random_animal(
+            &mut commands,
+            &config,
+            &mut rng,
+            "random",
+            time.elapsed_secs(),
+            &mut log,
+        );
         spawn_clock.time_until_next += sample_spawn_delay(rate, &mut rng);
     }
 }
@@ -105,8 +184,9 @@ fn spawn_random_plant(
     config: &SimulationConfig,
     rng: &mut impl Rng,
     source: &str,
+    log: &mut SimulationLog,
 ) {
-    let energy = 60.0;
+    let energy = 10.0;
     let plant = Plant {
         position: Vec2::new(
             rng.gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),
@@ -116,11 +196,47 @@ fn spawn_random_plant(
         size: plant_size_from_energy(energy, config),
         color: Color::srgb(0.3, 0.6, 0.2),
     };
-    info!(
-        "plant_spawn source={} x={:.2} y={:.2}",
-        source, plant.position.x, plant.position.y
+    write_simulation_log(
+        log,
+        &format!(
+            "plant_spawn source={} x={:.2} y={:.2}",
+            source, plant.position.x, plant.position.y
+        ),
     );
     commands.spawn(plant);
+}
+
+fn spawn_random_animal(
+    commands: &mut Commands,
+    config: &SimulationConfig,
+    rng: &mut impl Rng,
+    source: &str,
+    spawn_at: f32,
+    log: &mut SimulationLog,
+) {
+    let energy = config.spawn_config.animal_spawn_energy;
+    let animal = Animal {
+        position: Vec2::new(
+            rng.gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),
+            rng.gen_range(-config.world_bounds.half_height..config.world_bounds.half_height),
+        ),
+        velocity: Vec2::new(0.0, 0.0),
+        energy,
+        size: animal_size_from_energy(energy, config),
+        color: Color::srgb(0.8, 0.2, 0.4),
+        vision: Vision::default(),
+        genome: Genome::random(rng),
+        spawn_at,
+        despawn_at: None,
+    };
+    write_simulation_log(
+        log,
+        &format!(
+            "animal_spawn source={} x={:.2} y={:.2}",
+            source, animal.position.x, animal.position.y
+        ),
+    );
+    commands.spawn(animal);
 }
 
 fn sample_spawn_delay(rate_per_sec: f32, rng: &mut impl Rng) -> f32 {
@@ -160,12 +276,12 @@ fn think_animals(
     for mut animal in &mut animals {
         let acceleration = think_with_vision(
             &animal.vision,
-            &animal.brain,
+            &animal.genome,
             animal.position,
             animal.velocity,
             &world,
         );
-            animal.apply_acceleration(acceleration, time.delta_secs());
+        animal.apply_acceleration(acceleration, time.delta_secs());
         let limited_velocity = limit_speed_sigmoid(
             animal.velocity(),
             config.tuning.animal_max_speed,
@@ -213,49 +329,117 @@ fn grow_plants(
     }
 }
 
-fn detect_shared_grid_cells(
-    animals: Query<&Animal>,
-    plants: Query<&Plant>,
+fn reproduce_animals(
+    mut commands: Commands,
+    mut animals: Query<&mut Animal>,
+    time: Res<Time>,
+    mut log: ResMut<SimulationLog>,
     config: Res<SimulationConfig>,
-    mut shared_cells: ResMut<SharedGridCells>,
 ) {
-    let mut counts: HashMap<IVec2, (usize, usize)> = HashMap::new();
+    let spawn_energy = config.spawn_config.animal_spawn_energy.max(0.1);
+    let threshold = spawn_energy * config.tuning.reproduction_energy_multiplier.max(1.0);
+    let jitter = config.tuning.offspring_energy_jitter.max(0.0);
+    let mutation_strength = config.tuning.genome_mutation_strength.max(0.0);
+    let position_jitter = config.tuning.reproduction_position_jitter.max(0.0);
+    let mut rng = rand::thread_rng();
 
-    for animal in &animals {
-        let cell = config
-            .grid_config
-            .world_to_cell(animal.position, &config.world_bounds);
-        let entry = counts.entry(cell).or_insert((0, 0));
-        entry.0 += 1;
+    let mut offspring = Vec::new();
+    let mut reproduction_count = 0usize;
+
+    for mut parent in &mut animals {
+        if parent.energy < threshold {
+            continue;
+        }
+
+        reproduction_count += 1;
+        let mut offspring_energy_total = 0.0;
+
+        for _ in 0..2 {
+            let energy_factor = 1.0 + rng.gen_range(-jitter..jitter);
+            let child_energy = (spawn_energy * energy_factor).max(0.1);
+            offspring_energy_total += child_energy;
+
+            let mut child_position = parent.position
+                + Vec2::new(
+                    rng.gen_range(-position_jitter..position_jitter),
+                    rng.gen_range(-position_jitter..position_jitter),
+                );
+            let mut child_translation = child_position.extend(0.0);
+            ensure_torodial_world(&mut child_translation, &config.world_bounds);
+            child_position = child_translation.xy();
+
+            let child_velocity = parent.velocity
+                + Vec2::new(rng.gen_range(-15.0..15.0), rng.gen_range(-15.0..15.0));
+
+            offspring.push(Animal {
+                position: child_position,
+                velocity: child_velocity,
+                energy: child_energy,
+                size: animal_size_from_energy(child_energy, &config),
+                color: parent.color,
+                vision: parent.vision,
+                genome: parent.genome.mutated(&mut rng, mutation_strength),
+                spawn_at: time.elapsed_secs(),
+                despawn_at: None,
+            });
+        }
+
+        parent.energy = (parent.energy - offspring_energy_total).max(0.0);
+        parent.size = animal_size_from_energy(parent.energy, &config);
     }
 
-    for plant in &plants {
-        let cell = config
-            .grid_config
-            .world_to_cell(plant.position, &config.world_bounds);
-        let entry = counts.entry(cell).or_insert((0, 0));
-        entry.1 += 1;
+    for child in offspring {
+        commands.spawn(child);
     }
 
-    let mut occupied = counts
-        .into_iter()
-        .filter_map(|(cell, (animal_count, plant_count))| {
-            let occupancy = GridCellOccupancy {
-                cell,
-                animal_count,
-                plant_count,
-            };
-            (occupancy.total() > 1).then_some(occupancy)
-        })
-        .collect::<Vec<_>>();
-    occupied.sort_by_key(|occupancy| (occupancy.cell.x, occupancy.cell.y));
-    shared_cells.cells = occupied;
+    if reproduction_count > 0 {
+        write_simulation_log(
+            &mut log,
+            &format!(
+                "animal_reproduction parents={} offspring={}",
+                reproduction_count,
+                reproduction_count * 2
+            ),
+        );
+    }
 }
 
-fn apply_shared_cell_rules(
+fn despawn_starved_animals(
     mut commands: Commands,
-    shared_cells: Res<SharedGridCells>,
+    time: Res<Time>,
+    mut animals: Query<(Entity, &mut Animal)>,
+    mut log: ResMut<SimulationLog>,
+) {
+    let mut despawn_count = 0usize;
+    for (entity, mut animal) in &mut animals {
+        if animal.energy <= 0.0 {
+            animal.despawn_at = Some(time.elapsed_secs());
+            write_simulation_log(
+                &mut log,
+                &format!(
+                    "animal_despawn reason=starvation spawn_at={:.3} despawn_at={:.3} genome={:?}",
+                    animal.spawn_at,
+                    animal.despawn_at.unwrap_or_default(),
+                    animal.genome.genes
+                ),
+            );
+            commands.entity(entity).despawn();
+            despawn_count += 1;
+        }
+    }
+
+    if despawn_count > 0 {
+        write_simulation_log(
+            &mut log,
+            &format!("animal_starvation_despawn count={}", despawn_count),
+        );
+    }
+}
+
+fn feed_animals_on_plant_collision(
+    mut commands: Commands,
     config: Res<SimulationConfig>,
+    mut log: ResMut<SimulationLog>,
     mut entities: ParamSet<(
         Query<(Entity, &Animal)>,
         Query<&mut Animal>,
@@ -263,119 +447,101 @@ fn apply_shared_cell_rules(
         Query<&mut Plant>,
     )>,
 ) {
-    if shared_cells.cells.is_empty() {
+    let animals_snapshot = entities
+        .p0()
+        .iter()
+        .map(|(entity, animal)| (entity, animal.position, animal.size))
+        .collect::<Vec<_>>();
+    let plants_snapshot = entities
+        .p2()
+        .iter()
+        .map(|(entity, plant)| (entity, plant.position, plant.size, plant.energy))
+        .collect::<Vec<_>>();
+
+    if animals_snapshot.is_empty() || plants_snapshot.is_empty() {
         return;
     }
 
-    let mut animals_by_cell: HashMap<IVec2, Vec<Entity>> = HashMap::new();
-    for (entity, animal) in &entities.p0() {
-        let cell = config
-            .grid_config
-            .world_to_cell(animal.position, &config.world_bounds);
-        animals_by_cell.entry(cell).or_default().push(entity);
+    let consume_per_collision = config.tuning.plant_consume_per_cell.max(0.0);
+    if consume_per_collision <= 0.0 {
+        return;
     }
 
-    let mut plants_by_cell: HashMap<IVec2, Vec<Entity>> = HashMap::new();
-    for (entity, plant) in &entities.p2() {
-        let cell = config
-            .grid_config
-            .world_to_cell(plant.position, &config.world_bounds);
-        plants_by_cell.entry(cell).or_default().push(entity);
+    let mut animal_gain_by_entity: HashMap<Entity, f32> = HashMap::new();
+    let mut plant_taken_by_entity: HashMap<Entity, f32> = HashMap::new();
+    let mut collision_count = 0usize;
+
+    for (animal_entity, animal_position, animal_radius) in &animals_snapshot {
+        for (plant_entity, plant_position, plant_radius, plant_energy) in &plants_snapshot {
+            let combined_radius = *animal_radius + *plant_radius;
+            let overlaps = animal_position.distance_squared(*plant_position)
+                <= combined_radius * combined_radius;
+            if !overlaps {
+                continue;
+            }
+
+            let already_taken = plant_taken_by_entity.get(plant_entity).copied().unwrap_or(0.0);
+            let remaining_energy = (*plant_energy - already_taken).max(0.0);
+            if remaining_energy <= 0.0 {
+                continue;
+            }
+
+            let taken = consume_per_collision.min(remaining_energy);
+            if taken <= 0.0 {
+                continue;
+            }
+
+            collision_count += 1;
+            *animal_gain_by_entity.entry(*animal_entity).or_insert(0.0) += taken;
+            *plant_taken_by_entity.entry(*plant_entity).or_insert(0.0) += taken;
+        }
     }
 
-    let mut to_despawn: HashSet<Entity> = HashSet::new();
+    if collision_count == 0 {
+        return;
+    }
 
-    for occupancy in &shared_cells.cells {
-        let cell = occupancy.cell;
-        let animals = animals_by_cell
-            .get(&cell)
-            .cloned()
-            .unwrap_or_default();
-        let plants = plants_by_cell
-            .get(&cell)
-            .cloned()
-            .unwrap_or_default();
-
-        if !animals.is_empty() && !plants.is_empty() {
-            let mut consumed_energy = 0.0;
-            let mut depleted_plants = 0usize;
-            for plant_entity in &plants {
-                if let Ok(mut plant) = entities.p3().get_mut(*plant_entity) {
-                    let taken = plant.energy.min(config.tuning.plant_consume_per_cell);
-                    plant.energy -= taken;
-                    plant.size = plant_size_from_energy(plant.energy, &config);
-                    consumed_energy += taken;
-                    if plant.energy <= 0.0 {
-                        depleted_plants += 1;
-                        to_despawn.insert(*plant_entity);
-                    }
-                }
-            }
-
-            let gain_per_animal = consumed_energy / animals.len() as f32;
-            for animal_entity in &animals {
-                if let Ok(mut animal) = entities.p1().get_mut(*animal_entity) {
-                    animal.energy += gain_per_animal;
-                    animal.size = animal_size_from_energy(animal.energy, &config);
-                }
-            }
-
-            info!(
-                "cell_event type=feeding cell=({}, {}) animals={} plants={} consumed_energy={:.2} gain_per_animal={:.2} depleted_plants={}",
-                cell.x,
-                cell.y,
-                animals.len(),
-                plants.len(),
-                consumed_energy,
-                gain_per_animal,
-                depleted_plants
-            );
+    for (animal_entity, gained_energy) in &animal_gain_by_entity {
+        if let Ok(mut animal) = entities.p1().get_mut(*animal_entity) {
+            animal.energy += *gained_energy;
+            animal.size = animal_size_from_energy(animal.energy, &config);
         }
+    }
 
-        if animals.len() > 1 {
-            for animal_entity in &animals {
-                if let Ok(mut animal) = entities.p1().get_mut(*animal_entity) {
-                    animal.energy = (animal.energy - config.tuning.animal_crowding_penalty).max(0.0);
-                    animal.size = animal_size_from_energy(animal.energy, &config);
-                }
+    let mut to_despawn = Vec::new();
+    let mut consumed_energy = 0.0;
+    let mut depleted_plants = 0usize;
+    for (plant_entity, taken_energy) in &plant_taken_by_entity {
+        if let Ok(mut plant) = entities.p3().get_mut(*plant_entity) {
+            plant.energy = (plant.energy - *taken_energy).max(0.0);
+            plant.size = plant_size_from_energy(plant.energy, &config);
+            consumed_energy += *taken_energy;
+            if plant.energy <= 0.0 {
+                depleted_plants += 1;
+                to_despawn.push(*plant_entity);
             }
-
-            info!(
-                "cell_event type=animal_crowding cell=({}, {}) animals={} penalty_per_animal={:.2}",
-                cell.x,
-                cell.y,
-                animals.len(),
-                config.tuning.animal_crowding_penalty
-            );
-        }
-
-        if plants.len() > 1 {
-            let mut depleted_plants = 0usize;
-            for plant_entity in &plants {
-                if let Ok(mut plant) = entities.p3().get_mut(*plant_entity) {
-                    plant.energy = (plant.energy - config.tuning.plant_crowding_penalty).max(0.0);
-                    plant.size = plant_size_from_energy(plant.energy, &config);
-                    if plant.energy <= 0.0 {
-                        depleted_plants += 1;
-                        to_despawn.insert(*plant_entity);
-                    }
-                }
-            }
-
-            info!(
-                "cell_event type=plant_crowding cell=({}, {}) plants={} penalty_per_plant={:.2} depleted_plants={}",
-                cell.x,
-                cell.y,
-                plants.len(),
-                config.tuning.plant_crowding_penalty,
-                depleted_plants
-            );
         }
     }
 
     if !to_despawn.is_empty() {
-        info!("cell_event type=despawn_plants count={}", to_despawn.len());
+        write_simulation_log(
+            &mut log,
+            &format!("collision_event type=despawn_plants count={}", to_despawn.len()),
+        );
     }
+
+    write_simulation_log(
+        &mut log,
+        &format!(
+            "collision_event type=feeding collisions={} fed_animals={} touched_plants={} consumed_energy={:.2} depleted_plants={}",
+            collision_count,
+            animal_gain_by_entity.len(),
+            plant_taken_by_entity.len(),
+            consumed_energy,
+            depleted_plants
+        ),
+    );
+
     for entity in to_despawn {
         commands.entity(entity).despawn();
     }

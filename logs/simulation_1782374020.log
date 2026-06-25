@@ -1,0 +1,499 @@
+[simulation_start_ts=1782374020] simulation_start start_ts=1782374020
+[simulation_start_ts=1782374020] plant_spawn source=startup x=-303.67 y=-169.39
+[simulation_start_ts=1782374020] plant_spawn source=startup x=127.86 y=-114.87
+[simulation_start_ts=1782374020] plant_spawn source=startup x=114.61 y=6.42
+[simulation_start_ts=1782374020] plant_spawn source=startup x=-38.36 y=186.76
+[simulation_start_ts=1782374020] plant_spawn source=startup x=-115.16 y=-245.36
+[simulation_start_ts=1782374020] plant_spawn source=startup x=155.23 y=93.13
+[simulation_start_ts=1782374020] plant_spawn source=startup x=245.09 y=-68.09
+[simulation_start_ts=1782374020] plant_spawn source=startup x=252.07 y=-203.22
+[simulation_start_ts=1782374020] plant_spawn source=startup x=141.16 y=-38.52
+[simulation_start_ts=1782374020] plant_spawn source=startup x=-368.37 y=-157.42
+[simulation_start_ts=1782374020] plant_spawn source=random x=39.43 y=71.77
+[simulation_start_ts=1782374020] plant_spawn source=random x=-34.41 y=213.19
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(1, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(1, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(1, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(1, 1) animals=1 plants=1 consumed_energy=0.33 gain_per_animal=0.33 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 1) animals=1 plants=1 consumed_energy=0.38 gain_per_animal=0.38 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=21.29 y=214.51
+[simulation_start_ts=1782374020] plant_spawn source=random x=-4.91 y=-171.09
+[simulation_start_ts=1782374020] plant_spawn source=random x=323.00 y=118.26
+[simulation_start_ts=1782374020] plant_spawn source=random x=-376.37 y=-97.64
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] plant_spawn source=random x=-255.51 y=-36.46
+[simulation_start_ts=1782374020] plant_spawn source=random x=-329.66 y=-142.81
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(10, 6) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(10, 6) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(10, 6) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(10, 6) animals=1 plants=1 consumed_energy=0.65 gain_per_animal=0.65 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(8, 6) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(8, 6) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(8, 6) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(8, 6) animals=2 plants=1 consumed_energy=0.50 gain_per_animal=0.25 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-135.03 y=-4.27
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(7, 9) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(7, 9) animals=3 plants=1 consumed_energy=20.00 gain_per_animal=6.67 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(7, 9) animals=3 plants=1 consumed_energy=20.00 gain_per_animal=6.67 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(7, 9) animals=3 plants=1 consumed_energy=0.38 gain_per_animal=0.13 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 8) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 8) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 8) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 8) animals=4 plants=1 consumed_energy=0.83 gain_per_animal=0.21 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-230.90 y=-215.11
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(7, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(7, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(7, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(7, 1) animals=1 plants=1 consumed_energy=0.42 gain_per_animal=0.42 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 0) animals=1 plants=1 consumed_energy=0.90 gain_per_animal=0.90 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(3, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(3, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(3, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(3, 0) animals=1 plants=1 consumed_energy=0.11 gain_per_animal=0.11 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(4, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(4, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(4, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(4, 4) animals=2 plants=1 consumed_energy=0.21 gain_per_animal=0.10 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=174.47 y=-3.86
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(1, 2) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(1, 2) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(1, 2) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(1, 2) animals=2 plants=1 consumed_energy=0.42 gain_per_animal=0.21 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(2, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(2, 4) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(2, 4) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(2, 4) animals=1 plants=1 consumed_energy=0.49 gain_per_animal=0.49 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] plant_spawn source=random x=213.72 y=-16.30
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=14.587 despawn_at=22.099 genome=[-0.72427726, -0.6701497, -0.8560966, -0.4447106, 0.04232517, 0.8702963, -0.68380463, -0.204327, -0.052969232, -1.2251266, -0.53897953, 0.04338309, -0.4827267, -0.68182033, -0.0031225383]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-353.13 y=-2.37
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 3) animals=2 plants=1 consumed_energy=0.66 gain_per_animal=0.33 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 4) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 4) animals=2 plants=1 consumed_energy=0.02 gain_per_animal=0.01 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=16.559 despawn_at=22.965 genome=[-0.73750985, -0.6246086, -0.8744639, -0.34354168, 0.09420085, 0.9601849, -0.8684976, -0.2009088, 0.09713097, -1.0174668, -0.8245902, -0.16601084, -0.49417514, -0.75027376, 0.2053388]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 3) animals=1 plants=1 consumed_energy=1.20 gain_per_animal=1.20 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=17.414 despawn_at=24.046 genome=[-0.7572267, -0.76098114, -0.75078005, -0.52483165, -0.0069295317, 0.77507114, -1.0217683, -0.31415915, 0.21396752, -0.8506024, -0.5328501, -0.06603904, -0.3479422, -0.79623115, 0.32094675]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(11, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(11, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(11, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(11, 4) animals=1 plants=1 consumed_energy=0.15 gain_per_animal=0.15 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=19.021 despawn_at=25.268 genome=[-0.9564272, -0.6863697, -0.9951894, -0.5187993, -0.13198158, 0.7853515, -0.56846327, -0.13169308, 0.17223856, -1.2301898, -0.7199706, -0.26170278, -0.086961836, -1.0443175, 0.16963613]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-234.68 y=-57.06
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(10, 4) animals=1 plants=2 consumed_energy=40.00 gain_per_animal=40.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(10, 4) animals=2 plants=2 consumed_energy=7.52 gain_per_animal=3.76 depleted_plants=2
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(10, 4) plants=2 penalty_per_plant=0.50 depleted_plants=2
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=2
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=19.021 despawn_at=26.019 genome=[-1.0217929, -0.7047088, -0.7787213, -0.6961457, -0.16451383, 0.8295515, -0.78422445, -0.14559464, 0.4561109, -1.1156425, -0.49747992, 0.041057833, -0.32993725, -1.0669401, 0.03771937]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(9, 5) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(9, 5) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(9, 5) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(9, 5) animals=2 plants=1 consumed_energy=1.32 gain_per_animal=0.66 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=17.414 despawn_at=26.386 genome=[-0.87681746, -0.7393081, -0.8944609, -0.48508087, -0.16510907, 0.69235426, -1.0006837, -0.11748786, -0.010006577, -0.95145524, -0.83647805, -0.14948139, -0.4000588, -0.8486657, 0.35684144]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-352.35 y=-87.74
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 0) animals=1 plants=1 consumed_energy=1.35 gain_per_animal=1.35 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=20.173 despawn_at=27.799 genome=[-0.82410717, -0.8997983, -1.0394151, -0.6093698, 0.01237379, 0.6296294, -1.1922923, -0.17073059, 0.063540176, -0.874655, -0.8508196, -0.07738827, -0.42281213, -0.7141849, 0.1584953]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=7.366 despawn_at=27.916 genome=[-0.84586823, -0.5513645, -0.88197345, -0.22242616, 0.0012356192, 0.83166873, -0.7706499, 0.014949277, 0.20737371, -1.0052065, -0.6569432, -0.32890463, -0.37506643, -0.823545, 0.09576397]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=16.168 despawn_at=27.971 genome=[-0.76663226, -0.4397838, -0.92276406, -0.057598382, -0.17630444, 0.8985615, -0.95139474, -0.01507096, 0.2137927, -1.2038921, -0.67316353, -0.44735256, -0.20643087, -0.75888115, 0.2252864]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-163.66 y=-171.51
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=7.366 despawn_at=28.760 genome=[-0.9033587, -0.78006595, -1.0397663, -0.447872, -0.030465707, 0.76687783, -0.72238624, -0.1454523, 0.08355002, -1.1673234, -0.62844425, 0.023963466, -0.3624906, -0.8392425, 0.16431612]
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=22.352 despawn_at=28.760 genome=[-0.7474805, -0.74130666, -0.9354218, -0.5582023, -0.07293826, 0.7142128, -0.6613671, -0.049709946, 0.21714252, -1.1507509, -0.68308663, 0.08901483, -0.47313914, -0.92269564, 0.09056839]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(9, 2) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(9, 2) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(9, 2) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(9, 2) animals=2 plants=1 consumed_energy=1.45 gain_per_animal=0.73 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=22.352 despawn_at=29.104 genome=[-0.781691, -0.60450286, -1.2095971, -0.5821142, 0.019724756, 0.7595093, -0.78274345, -0.2657147, 0.26772317, -1.0411559, -0.765074, 0.025842443, -0.5286689, -0.6712333, 0.34744632]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 9) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 9) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 9) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 9) animals=1 plants=1 consumed_energy=1.22 gain_per_animal=1.22 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=22.427 despawn_at=30.043 genome=[-0.94594646, -0.82426566, -0.7049129, -0.49720463, -0.0689137, 0.68608415, -0.6734804, -0.14225288, 0.47114742, -1.1572807, -0.63939786, -0.2337759, -0.17611505, -0.8149542, 0.12516242]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=192.20 y=86.98
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=16.168 despawn_at=30.326 genome=[-0.9628734, -0.46393043, -0.8355808, -0.33847666, 0.0001628846, 0.8785764, -0.57524514, 0.023070574, 0.23368073, -1.1985763, -0.534415, -0.3521777, -0.23234148, -1.0188919, 0.21873742]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=0.000 despawn_at=30.501 genome=[-0.9286816, -0.6372659, -0.9218354, -0.36278272, -0.16690111, 0.8393376, -0.8682008, -0.1837287, 0.16723418, -0.96758175, -0.70313096, -0.15297174, -0.28617644, -0.7049217, 0.27998495]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(4, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(4, 1) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(4, 1) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(4, 1) animals=2 plants=1 consumed_energy=0.17 gain_per_animal=0.09 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=24.888 despawn_at=32.154 genome=[-1.1977018, -0.44197303, -1.1293235, -0.6750083, 0.079138234, 0.78592515, -0.5558914, -0.16350017, 0.22959015, -1.0917028, -0.5571871, 0.117450155, -0.18189019, -0.8555993, 0.3233011]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=11.82 y=-29.83
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(7, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=24.888 despawn_at=32.258 genome=[-1.1742145, -0.636423, -1.1382954, -0.69033206, 0.0952196, 0.95546436, -0.906715, -0.03278303, 0.19540606, -1.2087053, -0.58352387, -0.21713045, -0.19153303, -1.1686269, 0.3833443]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(7, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=25.608 despawn_at=32.313 genome=[-1.034682, -0.5932641, -0.90009147, -0.75270665, -0.078872874, 0.7677639, -0.73132896, 0.08504702, 0.1546571, -1.3747051, -0.7316825, 0.056357063, -0.28014594, -1.1475677, 0.31922328]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(7, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=26.249 despawn_at=32.531 genome=[-1.1048789, -0.47568113, -1.0653149, -0.78938335, -0.21620293, 0.8524116, -0.9852154, 0.080470994, 0.45285076, -1.1155962, -0.41078317, -0.23905295, -0.35471374, -1.375964, 0.20871031]
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=16.559 despawn_at=32.531 genome=[-1.0621846, -0.6308573, -0.97060686, -0.5739552, -0.031005293, 0.8852769, -0.73908556, 0.029291153, 0.26284105, -1.2567232, -0.6080838, -0.07945908, -0.21752442, -1.0304768, 0.23020132]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=2
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=22.427 despawn_at=32.701 genome=[-0.69344217, -0.5691328, -0.8702892, -0.5045969, -0.12823662, 0.56803256, -0.6688878, -0.082705736, 0.1780968, -1.251487, -0.58409035, -0.33683527, -0.23092075, -0.9441852, 0.27411506]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=26.249 despawn_at=33.256 genome=[-1.0842772, -0.6295181, -1.0249324, -0.90377426, -0.23485723, 0.8023414, -1.0388215, -0.02265434, 0.46044785, -1.1508448, -0.41343158, -0.025559798, -0.14805369, -1.2474707, 0.29395676]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=26.823 despawn_at=33.300 genome=[-0.81692255, -0.89780766, -0.9095515, -0.6092431, 0.060226977, 0.9610684, -0.97861433, -0.13426909, -0.18970186, -1.0561758, -0.5558322, 0.049185514, -0.2351289, -0.78605735, 0.18832567]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-375.08 y=-210.89
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 3) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 3) animals=3 plants=1 consumed_energy=0.44 gain_per_animal=0.15 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=17.974 despawn_at=35.503 genome=[-0.8853782, -0.6391178, -0.8623527, -0.31532726, 0.023277953, 0.69286346, -0.5367657, 0.01628685, 0.3219506, -1.2607718, -0.5131412, -0.37044424, -0.22380982, -0.9607369, 0.11549936]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=25.608 despawn_at=35.663 genome=[-0.9250325, -0.46165264, -0.91649544, -0.7566606, -0.0508368, 1.0012596, -0.8461332, -0.103033364, 0.40126425, -1.2306443, -0.5382683, -0.13552007, -0.31225047, -1.187846, 0.28511947]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=65.27 y=-160.96
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 0) animals=1 plants=1 consumed_energy=0.20 gain_per_animal=0.20 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-215.02 y=-218.86
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(11, 6) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(11, 6) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(11, 6) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] plant_spawn source=random x=249.17 y=-150.89
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(11, 6) animals=3 plants=1 consumed_energy=0.44 gain_per_animal=0.15 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=31.814 despawn_at=39.080 genome=[-0.7134508, -0.70101213, -0.98868567, -0.48846197, -0.15684935, 0.74433684, -0.6732206, -0.36730355, 0.19936663, -1.1890869, -0.6355077, -0.03701432, -0.1671903, -0.8553328, 0.061549544]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-75.57 y=211.19
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(8, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(8, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(8, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 9) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(8, 1) animals=1 plants=1 consumed_energy=0.31 gain_per_animal=0.31 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 9) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 9) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 9) animals=1 plants=1 consumed_energy=0.11 gain_per_animal=0.11 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=31.814 despawn_at=44.500 genome=[-0.7237973, -0.6049024, -0.73962593, -0.41453546, -0.1411863, 0.7602338, -0.7092751, -0.34936726, -0.14070415, -1.1571177, -0.83950996, 0.17493412, -0.30946186, -0.97673655, 0.08302258]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-8.36 y=-0.68
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(7, 4) plants=2 penalty_per_plant=0.50 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=plant_crowding cell=(7, 4) plants=2 penalty_per_plant=0.50 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=35.174 despawn_at=44.592 genome=[-0.83765876, -0.54183483, -0.7834506, -0.43942055, 0.024708986, 0.84232146, -0.764137, -0.24439208, 0.0020868331, -0.95282227, -0.7075118, -0.02398394, -0.47530735, -0.7921542, 0.22649792]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=35.174 despawn_at=45.324 genome=[-0.870914, -0.73205125, -0.9751939, -0.46386856, -0.07574068, 0.79052764, -0.61421746, -0.49318528, -0.12719636, -1.1484225, -0.55521935, 0.18353297, -0.20410813, -0.71913534, 0.13797963]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(3, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(3, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(3, 0) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(3, 0) animals=2 plants=1 consumed_energy=0.35 gain_per_animal=0.18 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=380.09 y=-159.99
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(3, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(3, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(3, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(3, 3) animals=1 plants=1 consumed_energy=1.08 gain_per_animal=1.08 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=196.03 y=9.94
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=26.823 despawn_at=48.213 genome=[-0.9773267, -0.8658812, -0.8955748, -0.48387194, -0.19522014, 0.90857166, -0.86198795, -0.053270474, 0.014384314, -0.87381744, -0.7061188, -0.017286494, -0.39601696, -0.7110759, 0.2535752]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-259.90 y=-73.57
+[simulation_start_ts=1782374020] plant_spawn source=random x=-119.89 y=29.12
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(13, 7) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(13, 7) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=45.614 despawn_at=51.839 genome=[-0.53395385, -0.48215055, -0.6027061, -0.60145324, -0.21398889, 0.95541894, -0.7847341, -0.16135079, 0.32492322, -0.7205708, -0.5316938, 0.4927805, -0.36887586, -1.0237405, 0.22989486]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(13, 7) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(11, 5) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(13, 7) animals=2 plants=1 consumed_energy=2.14 gain_per_animal=1.07 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(11, 5) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(11, 5) animals=3 plants=1 consumed_energy=20.00 gain_per_animal=6.67 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(11, 5) animals=3 plants=1 consumed_energy=0.25 gain_per_animal=0.08 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-127.65 y=187.55
+[simulation_start_ts=1782374020] plant_spawn source=random x=113.08 y=-90.47
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] plant_spawn source=random x=202.96 y=-40.85
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 1) animals=3 plants=1 consumed_energy=0.73 gain_per_animal=0.24 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=17.974 despawn_at=53.977 genome=[-0.8375356, -0.3479697, -0.84042656, -0.17973866, 0.18160906, 0.85365915, -0.6127296, 0.030836016, 0.045898482, -1.0715322, -0.66302127, -0.33258402, -0.41214982, -0.9432268, 0.16958342]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=45.614 despawn_at=55.789 genome=[-0.8769072, -0.69016427, -0.837825, -0.31782126, -0.35112023, 0.7049626, -0.9756763, -0.32627904, 0.2427663, -0.85864484, -0.65936834, 0.22496447, -0.53406805, -0.7677465, 0.06472773]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=269.73 y=9.34
+[simulation_start_ts=1782374020] plant_spawn source=random x=70.80 y=-103.79
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=20.173 despawn_at=55.974 genome=[-1.0154345, -0.8087841, -0.7982333, -0.5803007, -0.04512663, 0.76310134, -1.0402148, -0.057317674, -0.008596614, -1.0161769, -0.7106988, -0.0048934966, -0.35559604, -0.7789713, 0.25760773]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(9, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(9, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(9, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(9, 3) animals=1 plants=1 consumed_energy=0.15 gain_per_animal=0.15 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 8) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 8) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 8) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] animal_spawn source=random x=-160.62 y=185.02
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 8) animals=1 plants=1 consumed_energy=0.23 gain_per_animal=0.23 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-116.32 y=-50.18
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=51.839 despawn_at=58.062 genome=[-0.8940222, -0.8405629, -0.7372647, -0.2649578, 0.146775, 0.87829345, -0.8736131, -0.21971677, -0.09575367, -1.0057131, -0.744064, 0.31667173, -0.36087975, -0.8486974, 0.22447933]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 3) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 3) animals=2 plants=1 consumed_energy=0.07 gain_per_animal=0.03 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=77.96 y=-240.03
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=52.027 despawn_at=60.630 genome=[-0.61978585, -0.6060174, -0.6865642, -0.58934283, -0.34587538, 0.7293428, -0.70761704, -0.19107395, 0.29648656, -0.9020559, -0.6283248, 0.45959616, -0.41469824, -1.0449193, 0.052626885]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(2, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=52.027 despawn_at=60.736 genome=[-0.6180655, -0.4210527, -0.7493524, -0.5501991, 0.012673795, 0.9817422, -0.9196603, -0.17584296, 0.0334251, -0.6200889, -0.6510718, 0.32699832, -0.38978723, -0.9015045, 0.348095]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(2, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(2, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(2, 3) animals=1 plants=1 consumed_energy=0.52 gain_per_animal=0.52 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=53.592 despawn_at=61.053 genome=[-0.932054, -0.65059406, -0.7861005, -0.06829566, -0.3570915, 0.67316645, -0.8409945, -0.17877209, -0.1570631, -0.9620934, -0.39072156, 0.13387802, -0.63036555, -0.52878314, 0.30470562]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(14, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(14, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(14, 1) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(14, 1) animals=1 plants=1 consumed_energy=0.79 gain_per_animal=0.79 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-288.27 y=51.18
+[simulation_start_ts=1782374020] plant_spawn source=random x=-168.53 y=-48.49
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=56.864 despawn_at=64.117 genome=[-0.78004533, -0.67665964, -0.75330067, -0.5379317, -0.29082966, 0.871422, -0.95027447, -0.30860454, 0.16488124, -0.6630277, -0.75477797, 0.32869467, -0.56359285, -0.8697355, 0.28862554]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=56.864 despawn_at=64.169 genome=[-0.8560495, -0.6142771, -0.72406733, -0.42806125, -0.050484657, 0.6592278, -0.8178496, -0.09933701, -0.045660153, -0.80637765, -0.39609438, 0.38298213, -0.23170052, -1.0933568, 0.0076969564]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=39.015 despawn_at=65.101 genome=[-0.73262703, -0.53366154, -0.81224513, -0.18823622, -0.22630721, 0.59460497, -0.9226651, -0.23204066, 0.019168243, -0.84024525, -0.45095527, 0.31204218, -0.5191448, -0.7114256, 0.44165206]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(11, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(11, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] plant_spawn source=random x=-44.71 y=216.18
+[simulation_start_ts=1782374020] plant_spawn source=random x=-95.13 y=-46.65
+[simulation_start_ts=1782374020] plant_spawn source=random x=255.13 y=-248.42
+[simulation_start_ts=1782374020] plant_spawn source=random x=22.36 y=142.86
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 5) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 5) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 5) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 5) animals=2 plants=1 consumed_energy=0.61 gain_per_animal=0.31 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=14.587 despawn_at=69.723 genome=[-0.79052794, -0.6593961, -0.93692744, -0.30532736, -0.03452088, 0.71707386, -0.75439626, -0.3141669, 0.038276628, -0.9943942, -0.6407213, 0.15459606, -0.35940617, -0.834705, 0.24924658]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(8, 2) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(8, 2) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(8, 2) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(8, 2) animals=1 plants=1 consumed_energy=0.71 gain_per_animal=0.71 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=123.56 y=-222.57
+[simulation_start_ts=1782374020] plant_spawn source=random x=-85.00 y=69.43
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=65.303 despawn_at=71.917 genome=[-0.61352015, -0.50364155, -0.7897518, -0.575794, -0.185162, 0.6583837, -0.9800758, -0.2845627, 0.048568256, -0.7016067, -0.6583812, 0.22526339, -0.4399894, -0.90568185, 0.10311355]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=65.303 despawn_at=72.526 genome=[-0.5056367, -0.7207354, -0.828509, -0.32723546, -0.23358262, 0.69379956, -0.7416809, -0.21844889, 0.018236317, -0.7911861, -0.3798223, 0.27007794, -0.3107851, -0.8519181, 0.10837945]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 4) animals=3 plants=1 consumed_energy=20.00 gain_per_animal=6.67 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 4) animals=3 plants=1 consumed_energy=20.00 gain_per_animal=6.67 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 4) animals=3 plants=1 consumed_energy=0.31 gain_per_animal=0.10 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 9) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 9) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 9) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(6, 9) animals=1 plants=1 consumed_energy=0.35 gain_per_animal=0.35 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(4, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(4, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(4, 4) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(4, 4) animals=2 plants=1 consumed_energy=0.55 gain_per_animal=0.28 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(5, 5) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=68.054 despawn_at=75.043 genome=[-0.59065735, -0.23946725, -0.91153747, -0.33691543, -0.3980395, 0.53184307, -0.93720764, 0.035049155, 0.20844801, -0.8737746, -0.5684027, 0.37905347, -0.54417497, -0.9910023, 0.7726988]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(2, 6) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(2, 6) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(2, 6) animals=2 plants=1 consumed_energy=20.00 gain_per_animal=10.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=2 offspring=4
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(2, 6) animals=5 plants=1 consumed_energy=0.67 gain_per_animal=0.13 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-352.29 y=-60.35
+[simulation_start_ts=1782374020] plant_spawn source=random x=-228.66 y=218.49
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=53.592 despawn_at=77.152 genome=[-0.64641714, -0.4335702, -1.0019544, -0.26996922, -0.4238248, 0.60489064, -0.92303437, -0.0693779, 0.027576983, -0.9386283, -0.37766016, 0.3437671, -0.36761194, -0.8728579, 0.6055687]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=39.015 despawn_at=77.425 genome=[-0.69401234, -0.5660628, -0.74177647, -0.4392052, -0.15238239, 0.8070574, -0.78905356, -0.22279678, 0.14321429, -0.79958874, -0.5775472, 0.32716125, -0.3636757, -0.910399, 0.15628037]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=130.41 y=198.98
+[simulation_start_ts=1782374020] plant_spawn source=random x=248.92 y=151.95
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_reproduction parents=1 offspring=2
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 3) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(0, 3) animals=1 plants=1 consumed_energy=0.12 gain_per_animal=0.12 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=-359.58 y=159.36
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 8) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 8) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 8) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=73.534 despawn_at=80.171 genome=[-0.7469592, -0.8234271, -0.7479751, -0.27734983, -0.1363027, 0.85320705, -0.42858315, -0.36060783, 0.48120886, -1.0817838, -0.79634887, -0.19106749, -0.35211712, -0.95194876, 0.23766871]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 8) animals=1 plants=1 consumed_energy=0.10 gain_per_animal=0.10 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 0) animals=1 plants=1 consumed_energy=20.00 gain_per_animal=20.00 depleted_plants=0
+[simulation_start_ts=1782374020] cell_event type=feeding cell=(12, 0) animals=2 plants=1 consumed_energy=0.65 gain_per_animal=0.33 depleted_plants=1
+[simulation_start_ts=1782374020] cell_event type=despawn_plants count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=56.936 despawn_at=80.632 genome=[0.6771076, 0.022126436, 0.42280197, 0.8707752, 0.17783809, 0.8634567, 0.23670101, -0.4289229, -0.6814039, 0.16466475, 0.54882455, -0.12384677, -0.59054065, -0.33295465, -0.88648105]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] animal_despawn reason=starvation spawn_at=73.534 despawn_at=81.297 genome=[-1.0435586, -0.8396273, -0.78466964, -0.24137105, -0.4048865, 0.80408293, -0.6906189, -0.3227762, 0.5272214, -1.07968, -0.85086024, -0.19104154, -0.27413183, -0.7278014, 0.2246685]
+[simulation_start_ts=1782374020] animal_starvation_despawn count=1
+[simulation_start_ts=1782374020] plant_spawn source=random x=392.69 y=-109.12
