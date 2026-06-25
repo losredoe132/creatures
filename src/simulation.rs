@@ -1,11 +1,13 @@
 use bevy::prelude::*;
 use rand::Rng;
+use rand::SeedableRng;
+use rand::rngs::StdRng;
 use std::collections::HashMap;
 use std::fs::{OpenOptions, create_dir_all};
 use std::io::Write;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::brain::think_with_vision;
+use crate::brain::{think_with_vision, steering_to_acceleration};
 use crate::config::{SimulationConfig, WorldBounds};
 use crate::creature::{Animal, EnergyPosition, Movable, Plant};
 use crate::mlp::Genome;
@@ -31,6 +33,9 @@ struct AnimalSpawnClock {
     time_until_next: f32,
     initialized: bool,
 }
+
+#[derive(Resource)]
+struct SimulationRng(StdRng);
 
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
@@ -60,6 +65,11 @@ fn initialize_simulation_log(mut commands: Commands) {
         .map(|d| d.as_secs())
         .unwrap_or(0);
 
+    let seed = std::env::var("RANDOM_SEED")
+        .ok()
+        .and_then(|s| s.parse::<u64>().ok())
+        .unwrap_or_else(|| rand::random::<u64>());
+
     let file = match create_dir_all("logs") {
         Ok(()) => {
             let path = format!("logs/simulation_{}.log", start_timestamp_secs);
@@ -74,9 +84,10 @@ fn initialize_simulation_log(mut commands: Commands) {
     };
     write_simulation_log(
         &mut log,
-        &format!("simulation_start start_ts={}", start_timestamp_secs),
+        &format!("simulation_start start_ts={} seed={}", start_timestamp_secs, seed),
     );
     commands.insert_resource(log);
+    commands.insert_resource(SimulationRng(StdRng::seed_from_u64(seed)));
 }
 
 fn write_simulation_log(log: &mut SimulationLog, message: &str) {
@@ -97,24 +108,27 @@ fn setup_world(
     time: Res<Time>,
     mut log: ResMut<SimulationLog>,
     config: Res<SimulationConfig>,
+    mut rng: ResMut<SimulationRng>,
 ) {
     let animal_energy = config.spawn_config.animal_spawn_energy;
-    let mut rng = rand::thread_rng();
     let animal = Animal {
         position: Vec2::new(0.0, 0.0),
         velocity: Vec2::new(0.0, 0.0),
         energy: animal_energy,
         size: animal_size_from_energy(animal_energy, &config),
         color: Color::srgb(0.8, 0.2, 0.4),
-        vision: Vision::default(),
-        genome: Genome::random(&mut rng),
+        vision: Vision {
+            range: config.tuning.vision_range.max(0.0),
+            field_of_view_radians: config.tuning.vision_fov_radians.clamp(0.0, std::f32::consts::PI),
+        },
+        genome: Genome::random(&mut rng.0),
         spawn_at: time.elapsed_secs(),
         despawn_at: None,
     };
 
 
     for _ in 0..config.spawn_config.n_plants {
-        spawn_random_plant(&mut commands, &config, &mut rng, "startup", &mut log);
+        spawn_random_plant(&mut commands, &config, &mut rng.0, "startup", &mut log);
     }
 
     commands.spawn(animal);
@@ -126,6 +140,7 @@ fn random_spawn_plants(
     config: Res<SimulationConfig>,
     mut log: ResMut<SimulationLog>,
     mut spawn_clock: ResMut<PlantSpawnClock>,
+    mut rng: ResMut<SimulationRng>,
 ) {
     let rate = config.tuning.plant_spawn_rate_per_sec;
     if rate <= 0.0 {
@@ -133,16 +148,15 @@ fn random_spawn_plants(
         return;
     }
 
-    let mut rng = rand::thread_rng();
     if !spawn_clock.initialized {
-        spawn_clock.time_until_next = sample_spawn_delay(rate, &mut rng);
+        spawn_clock.time_until_next = sample_spawn_delay(rate, &mut rng.0);
         spawn_clock.initialized = true;
     }
 
     spawn_clock.time_until_next -= time.delta_secs();
     while spawn_clock.time_until_next <= 0.0 {
-        spawn_random_plant(&mut commands, &config, &mut rng, "random", &mut log);
-        spawn_clock.time_until_next += sample_spawn_delay(rate, &mut rng);
+        spawn_random_plant(&mut commands, &config, &mut rng.0, "random", &mut log);
+        spawn_clock.time_until_next += sample_spawn_delay(rate, &mut rng.0);
     }
 }
 
@@ -152,6 +166,7 @@ fn random_spawn_animals(
     config: Res<SimulationConfig>,
     mut log: ResMut<SimulationLog>,
     mut spawn_clock: ResMut<AnimalSpawnClock>,
+    mut rng: ResMut<SimulationRng>,
 ) {
     let rate = config.tuning.animal_spawn_rate_per_sec;
     if rate <= 0.0 {
@@ -159,9 +174,8 @@ fn random_spawn_animals(
         return;
     }
 
-    let mut rng = rand::thread_rng();
     if !spawn_clock.initialized {
-        spawn_clock.time_until_next = sample_spawn_delay(rate, &mut rng);
+        spawn_clock.time_until_next = sample_spawn_delay(rate, &mut rng.0);
         spawn_clock.initialized = true;
     }
 
@@ -170,12 +184,12 @@ fn random_spawn_animals(
         spawn_random_animal(
             &mut commands,
             &config,
-            &mut rng,
+            &mut rng.0,
             "random",
             time.elapsed_secs(),
             &mut log,
         );
-        spawn_clock.time_until_next += sample_spawn_delay(rate, &mut rng);
+        spawn_clock.time_until_next += sample_spawn_delay(rate, &mut rng.0);
     }
 }
 
@@ -224,7 +238,10 @@ fn spawn_random_animal(
         energy,
         size: animal_size_from_energy(energy, config),
         color: Color::srgb(0.8, 0.2, 0.4),
-        vision: Vision::default(),
+        vision: Vision {
+            range: config.tuning.vision_range.max(0.0),
+            field_of_view_radians: config.tuning.vision_fov_radians.clamp(0.0, std::f32::consts::PI),
+        },
         genome: Genome::random(rng),
         spawn_at,
         despawn_at: None,
@@ -274,13 +291,22 @@ fn think_animals(
     };
 
     for mut animal in &mut animals {
-        let acceleration = think_with_vision(
+        let steering = think_with_vision(
             &animal.vision,
             &animal.genome,
             animal.position,
             animal.velocity,
             &world,
         );
+
+        let velocity = animal.velocity();
+        let forward = if velocity.length_squared() > f32::EPSILON {
+            velocity.normalize()
+        } else {
+            Vec2::X
+        };
+
+        let acceleration = steering_to_acceleration(steering, forward);
         animal.apply_acceleration(acceleration, time.delta_secs());
         let limited_velocity = limit_speed_sigmoid(
             animal.velocity(),
@@ -297,6 +323,9 @@ fn move_animals(
     config: Res<SimulationConfig>,
 ) {
     for (mut animal, mut transform) in &mut query {
+        let friction_factor = (1.0 - config.tuning.animal_friction * time.delta_secs()).max(0.0);
+        let velocity_after_friction = animal.velocity() * friction_factor;
+        animal.set_velocity(velocity_after_friction);
         transform.translation += animal.velocity().extend(0.0) * time.delta_secs();
         ensure_torodial_world(&mut transform.translation, &config.world_bounds);
         animal.set_position(transform.translation.xy());
@@ -335,13 +364,13 @@ fn reproduce_animals(
     time: Res<Time>,
     mut log: ResMut<SimulationLog>,
     config: Res<SimulationConfig>,
+    mut rng: ResMut<SimulationRng>,
 ) {
     let spawn_energy = config.spawn_config.animal_spawn_energy.max(0.1);
     let threshold = spawn_energy * config.tuning.reproduction_energy_multiplier.max(1.0);
     let jitter = config.tuning.offspring_energy_jitter.max(0.0);
     let mutation_strength = config.tuning.genome_mutation_strength.max(0.0);
     let position_jitter = config.tuning.reproduction_position_jitter.max(0.0);
-    let mut rng = rand::thread_rng();
 
     let mut offspring = Vec::new();
     let mut reproduction_count = 0usize;
@@ -355,21 +384,21 @@ fn reproduce_animals(
         let mut offspring_energy_total = 0.0;
 
         for _ in 0..2 {
-            let energy_factor = 1.0 + rng.gen_range(-jitter..jitter);
+            let energy_factor = 1.0 + rng.0.gen_range(-jitter..jitter);
             let child_energy = (spawn_energy * energy_factor).max(0.1);
             offspring_energy_total += child_energy;
 
             let mut child_position = parent.position
                 + Vec2::new(
-                    rng.gen_range(-position_jitter..position_jitter),
-                    rng.gen_range(-position_jitter..position_jitter),
+                    rng.0.gen_range(-position_jitter..position_jitter),
+                    rng.0.gen_range(-position_jitter..position_jitter),
                 );
             let mut child_translation = child_position.extend(0.0);
             ensure_torodial_world(&mut child_translation, &config.world_bounds);
             child_position = child_translation.xy();
 
             let child_velocity = parent.velocity
-                + Vec2::new(rng.gen_range(-15.0..15.0), rng.gen_range(-15.0..15.0));
+                + Vec2::new(rng.0.gen_range(-5.0..5.0), rng.0.gen_range(-5.0..5.0));
 
             offspring.push(Animal {
                 position: child_position,
@@ -378,7 +407,7 @@ fn reproduce_animals(
                 size: animal_size_from_energy(child_energy, &config),
                 color: parent.color,
                 vision: parent.vision,
-                genome: parent.genome.mutated(&mut rng, mutation_strength),
+                genome: parent.genome.mutated(&mut rng.0, mutation_strength),
                 spawn_at: time.elapsed_secs(),
                 despawn_at: None,
             });

@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 
 use crate::sense::{PerceivedKind, PerceivedObject, Sense, Vision};
-use crate::mlp::{mlp_acceleration, Genome, MLP_INPUTS};
+use crate::mlp::{mlp_steering, Genome, MLP_INPUTS, SteeringOutput};
 
-const ACCELERATION_SCALE: f32 = 450.0;
+const ACCELERATION_SCALE: f32 = 900.0;
 
 pub fn think_with_vision(
     vision: &Vision,
@@ -11,17 +11,10 @@ pub fn think_with_vision(
     origin: Vec2,
     forward: Vec2,
     world: &crate::sense::PerceptionWorld<'_>,
-) -> Vec2 {
+) -> SteeringOutput {
     let sensed = vision.sense(origin, forward, world);
-    let sensed_offsets: Vec<PerceivedObject> = sensed
-        .into_iter()
-        .map(|mut object| {
-            object.position -= origin;
-            object
-        })
-        .collect();
-    let features = encode_perception_features(&sensed_offsets, vision.range.max(1.0));
-    mlp_acceleration(features, genome) * ACCELERATION_SCALE
+    let features = encode_perception_features(&sensed, vision.range.max(1.0));
+    mlp_steering(features, genome)
 }
 
 fn encode_perception_features(
@@ -32,9 +25,8 @@ fn encode_perception_features(
         .iter()
         .filter(|object| object.kind == PerceivedKind::Plant)
         .min_by(|left, right| {
-            left.position
-                .length_squared()
-                .partial_cmp(&right.position.length_squared())
+            left.distance
+                .partial_cmp(&right.distance)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
@@ -42,9 +34,8 @@ fn encode_perception_features(
         .iter()
         .filter(|object| object.kind == PerceivedKind::Animal)
         .min_by(|left, right| {
-            left.position
-                .length_squared()
-                .partial_cmp(&right.position.length_squared())
+            left.distance
+                .partial_cmp(&right.distance)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
@@ -59,12 +50,11 @@ fn encode_perception_features(
 
     let plant_features = nearest_plant
         .map(|plant| {
-            let distance = plant.position.length();
-            let dir = plant.position.normalize_or_zero();
+            let angle_normalized = (plant.angle_radians / std::f32::consts::PI).clamp(-1.0, 1.0);
             [
-                dir.x,
-                dir.y,
-                (distance / vision_range).clamp(0.0, 1.0),
+                angle_normalized.sin(),
+                angle_normalized.cos(),
+                (plant.distance / vision_range).clamp(0.0, 1.0),
                 (plant.energy / 200.0).clamp(0.0, 1.0),
                 (plant.radius / 50.0).clamp(0.0, 1.0),
             ]
@@ -73,12 +63,11 @@ fn encode_perception_features(
 
     let animal_features = nearest_animal
         .map(|animal| {
-            let distance = animal.position.length();
-            let dir = animal.position.normalize_or_zero();
+            let angle_normalized = (animal.angle_radians / std::f32::consts::PI).clamp(-1.0, 1.0);
             [
-                dir.x,
-                dir.y,
-                (distance / vision_range).clamp(0.0, 1.0),
+                angle_normalized.sin(),
+                angle_normalized.cos(),
+                (animal.distance / vision_range).clamp(0.0, 1.0),
                 (animal.energy / 200.0).clamp(0.0, 1.0),
                 (animal.radius / 50.0).clamp(0.0, 1.0),
             ]
@@ -97,4 +86,16 @@ fn encode_perception_features(
     features[8] = (animal_count / 8.0).clamp(0.0, 1.0);
     features[9] = 1.0 - animal_features[2];
     features
+}
+
+pub fn steering_to_acceleration(
+    steering: SteeringOutput,
+    current_forward: Vec2,
+) -> Vec2 {
+    if steering.magnitude <= 0.0 {
+        return Vec2::ZERO;
+    }
+    let current_angle = current_forward.to_angle();
+    let desired_angle = current_angle + steering.angle_radians;
+    Vec2::from_angle(desired_angle) * steering.magnitude * ACCELERATION_SCALE
 }

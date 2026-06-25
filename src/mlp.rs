@@ -1,4 +1,3 @@
-use bevy::prelude::Vec2;
 use rand::Rng;
 
 pub const MLP_INPUTS: usize = 10;
@@ -36,9 +35,18 @@ impl Genome {
     }
 }
 
-pub fn mlp_acceleration(features: [f32; MLP_INPUTS], genome: &Genome) -> Vec2 {
+#[derive(Debug, Clone, Copy)]
+pub struct SteeringOutput {
+    pub angle_radians: f32,
+    pub magnitude: f32,
+}
+
+pub fn mlp_steering(features: [f32; MLP_INPUTS], genome: &Genome) -> SteeringOutput {
     if genome.genes.len() != GENOME_LEN {
-        return Vec2::ZERO;
+        return SteeringOutput {
+            angle_radians: 0.0,
+            magnitude: 0.0,
+        };
     }
 
     let mut index = 0usize;
@@ -72,5 +80,8 @@ pub fn mlp_acceleration(features: [f32; MLP_INPUTS], genome: &Genome) -> Vec2 {
         output[o] = sum.tanh();
     }
 
-    Vec2::new(output[0], output[1])
+    SteeringOutput {
+        angle_radians: output[0] * std::f32::consts::PI,
+        magnitude: output[1].max(0.0),
+    }
 }

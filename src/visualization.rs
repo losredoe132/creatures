@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
-use crate::brain::think_with_vision;
-use crate::creature::{Animal, Plant};
+use crate::brain::{think_with_vision, steering_to_acceleration};
+use crate::creature::{Animal, Movable, Plant};
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
 
 pub struct VisualizationPlugin;
@@ -136,7 +136,7 @@ fn draw_animal_acceleration_arrows(
 
     let arrow_color = Color::srgba(1.0, 0.95, 0.2, 0.9);
     for animal in &animals {
-        let acceleration = think_with_vision(
+        let steering = think_with_vision(
             &animal.vision,
             &animal.genome,
             animal.position,
@@ -144,6 +144,14 @@ fn draw_animal_acceleration_arrows(
             &world,
         );
 
+        let velocity = animal.velocity();
+        let forward = if velocity.length_squared() > f32::EPSILON {
+            velocity.normalize()
+        } else {
+            Vec2::X
+        };
+
+        let acceleration = steering_to_acceleration(steering, forward);
         let magnitude = acceleration.length();
         if magnitude <= f32::EPSILON {
             continue;

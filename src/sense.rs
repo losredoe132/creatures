@@ -12,14 +12,6 @@ pub struct Vision {
     pub field_of_view_radians: f32,
 }
 
-impl Default for Vision {
-    fn default() -> Self {
-        Self {
-            range: 200.0,
-            field_of_view_radians: std::f32::consts::FRAC_PI_2,
-        }
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PerceivedKind {
@@ -30,7 +22,8 @@ pub enum PerceivedKind {
 #[derive(Debug, Clone, Copy)]
 pub struct PerceivedObject {
     pub kind: PerceivedKind,
-    pub position: Vec2,
+    pub angle_radians: f32,
+    pub distance: f32,
     pub radius: f32,
     pub energy: f32,
 }
@@ -68,20 +61,22 @@ impl Sense for Vision {
                 let offset = plant.position - origin;
                 within_vision_cone(offset, forward, self.range, half_fov).then_some(PerceivedObject {
                     kind: PerceivedKind::Plant,
-                    position: plant.position,
+                    angle_radians: forward.angle_to(offset.normalize_or_zero()),
+                    distance: offset.length(),
                     radius: plant.radius,
                     energy: plant.energy,
                 })
             })
-            .chain(world.animals.iter().filter_map(|animal| {
-                let offset = animal.position - origin;
-                within_vision_cone(offset, forward, self.range, half_fov).then_some(PerceivedObject {
-                    kind: PerceivedKind::Animal,
-                    position: animal.position,
-                    radius: animal.radius,
-                    energy: animal.energy,
-                })
-            }))
+            // .chain(world.animals.iter().filter_map(|animal| {
+            //     let offset = animal.position - origin;
+            //     within_vision_cone(offset, forward, self.range, half_fov).then_some(PerceivedObject {
+            //         kind: PerceivedKind::Animal,
+            //         angle_radians: forward.angle_to(offset.normalize_or_zero()),
+            //         distance: offset.length(),
+            //         radius: animal.radius,
+            //         energy: animal.energy,
+            //     })
+            // }))
             .collect()
     }
 }
