@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
 use crate::brain::think_with_vision;
-use crate::config::SimulationConfig;
 use crate::creature::{Animal, Plant};
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
 

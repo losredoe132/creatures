@@ -462,7 +462,7 @@ fn feed_animals_on_plant_collision(
         return;
     }
 
-    let consume_per_collision = config.tuning.plant_consume_per_cell.max(0.0);
+    let consume_per_collision = config.tuning.plant_consume_per_collision.max(0.0);
     if consume_per_collision <= 0.0 {
         return;
     }
