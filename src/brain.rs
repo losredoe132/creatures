@@ -28,6 +28,8 @@ fn encode_perception_features(
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
+    debug!("Nearest plant: {:?}", nearest_plant);
+
     let plant_features = nearest_plant
         .map(|plant| {
             let angle_normalized = (plant.angle_radians / std::f32::consts::PI).clamp(-1.0, 1.0);
@@ -39,6 +41,7 @@ fn encode_perception_features(
         })
         .unwrap_or([0.0; 3]);
 
+    debug!("Plant features: {:?}", plant_features);
     let mut features = [0.0f32; MLP_INPUTS];
     features[0] = plant_features[0];
     features[1] = plant_features[1];

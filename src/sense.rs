@@ -50,7 +50,7 @@ impl Sense for Vision {
     type Output = Vec<PerceivedObject>;
 
     fn sense(&self, origin: Vec2, forward: Vec2, world: &PerceptionWorld<'_>) -> Self::Output {
-        let sensed_objects: Vec<PerceivedObject> = world
+        world
             .plants
             .iter()
             .filter(|plant| {
@@ -74,9 +74,7 @@ impl Sense for Vision {
             //         energy: animal.energy,
             //     })
             // }))
-            .collect();
-        println!("{} sensed {} objects\n", origin, sensed_objects.len());
-        sensed_objects
+            .collect()
     }
 }
 
