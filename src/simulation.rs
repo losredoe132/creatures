@@ -5,13 +5,13 @@ use rand::rngs::StdRng;
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::brain::{think_with_vision, steering_to_acceleration};
+use crate::brain::think_with_vision;
+use crate::utils::size_from_energy;
 use crate::config::{SimulationConfig, WorldBounds};
 use crate::creature::{Animal, EnergyPosition, Movable, Plant};
 use crate::logging::{ConsoleBackend, SimulationLogger, TextFileBackend};
 use crate::mlp::Genome;
-use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot, Vision};
-use crate::utils::limit_speed_sigmoid;
+use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
 
 pub struct SimulationPlugin;
 
@@ -45,6 +45,7 @@ impl Plugin for SimulationPlugin {
                     random_spawn_animals,
                     feed_animals_on_plant_collision,
                     despawn_starved_animals,
+                    log_removed_animals,
                     reproduce_animals,
                 )
                     .chain(),
@@ -81,21 +82,13 @@ fn setup_world(
     config: Res<SimulationConfig>,
     mut rng: ResMut<SimulationRng>,
 ) {
-    let animal_energy = config.spawn_config.animal_spawn_energy;
-    let animal = Animal {
-        position: Vec2::new(0.0, 0.0),
-        velocity: Vec2::new(0.0, 0.0),
-        energy: animal_energy,
-        size: animal_size_from_energy(animal_energy, &config),
-        color: Color::srgb(0.8, 0.2, 0.4),
-        vision: Vision {
-            range: config.tuning.vision_range.max(0.0),
-            field_of_view_radians: config.tuning.vision_fov_radians.clamp(0.0, std::f32::consts::PI),
-        },
-        genome: Genome::random(&mut rng.0),
-        spawn_at: time.elapsed_secs(),
-        despawn_at: None,
-    };
+    let animal = Animal::new(
+         Vec2::new(0.0, 0.0),
+         Vec2::new(0.0, 0.0),
+         Genome::random(&mut rng.0), 
+         &time, 
+            &config
+    );
 
 
     for _ in 0..config.spawn_config.n_plants {
@@ -157,7 +150,7 @@ fn random_spawn_animals(
             &config,
             &mut rng.0,
             "random",
-            time.elapsed_secs(),
+            & time,
             &mut *log,
         );
         spawn_clock.time_until_next += sample_spawn_delay(rate, &mut rng.0);
@@ -178,7 +171,7 @@ fn spawn_random_plant(
             rng.gen_range(-config.world_bounds.half_height..config.world_bounds.half_height),
         ),
         energy,
-        size: plant_size_from_energy(energy, config),
+        size: size_from_energy(energy, config),
         color: Color::srgb(0.3, 0.6, 0.2),
     };
     log.log(&format!(
@@ -193,27 +186,17 @@ fn spawn_random_animal(
     config: &SimulationConfig,
     rng: &mut impl Rng,
     source: &str,
-    spawn_at: f32,
+    time: &Res<Time>,
     log: &mut SimulationLogger,
 ) {
     let energy = config.spawn_config.animal_spawn_energy;
-    let animal = Animal {
-        position: Vec2::new(
-            rng.gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),
-            rng.gen_range(-config.world_bounds.half_height..config.world_bounds.half_height),
-        ),
-        velocity: Vec2::new(0.0, 0.0),
-        energy,
-        size: animal_size_from_energy(energy, config),
-        color: Color::srgb(0.8, 0.2, 0.4),
-        vision: Vision {
-            range: config.tuning.vision_range.max(0.0),
-            field_of_view_radians: config.tuning.vision_fov_radians.clamp(0.0, std::f32::consts::PI),
-        },
-        genome: Genome::random(rng),
-        spawn_at,
-        despawn_at: None,
-    };
+    let animal= Animal::new(
+         Vec2::new(0.0, 0.0),
+         Vec2::new(0.0, 0.0),
+         Genome::random(rng), 
+         time, 
+         config
+    );
     log.log(&format!(
             "animal_spawn source={} x={:.2} y={:.2}",
             source, animal.position.x, animal.position.y
@@ -229,7 +212,6 @@ fn sample_spawn_delay(rate_per_sec: f32, rng: &mut impl Rng) -> f32 {
 fn think_animals(
     mut animals: Query<&mut Animal>,
     plants: Query<&Plant>,
-    time: Res<Time>,
     config: Res<SimulationConfig>,
 ) {
     let plants_snapshot: Vec<PlantSnapshot> = plants
@@ -256,29 +238,14 @@ fn think_animals(
     };
 
     for mut animal in &mut animals {
-        let steering = think_with_vision(
+        let movement = think_with_vision(
             &animal.vision,
             &animal.genome,
             animal.position,
             animal.velocity,
             &world,
         );
-
-        let velocity = animal.velocity();
-        let forward = if velocity.length_squared() > f32::EPSILON {
-            velocity.normalize()
-        } else {
-            Vec2::X
-        };
-
-        let acceleration = steering_to_acceleration(steering, forward);
-        animal.apply_acceleration(acceleration, time.delta_secs());
-        let limited_velocity = limit_speed_sigmoid(
-            animal.velocity(),
-            config.tuning.animal_max_speed,
-            config.tuning.speed_sigmoid_steepness,
-        );
-        animal.set_velocity(limited_velocity);
+        animal.set_velocity(movement * config.tuning.animal_max_speed.max(0.0));
     }
 }
 
@@ -286,13 +253,46 @@ fn move_animals(
     mut query: Query<(&mut Animal, &mut Transform)>,
     time: Res<Time>,
     config: Res<SimulationConfig>,
+    mut log: ResMut<SimulationLogger>,
 ) {
     for (mut animal, mut transform) in &mut query {
-        let friction_factor = (1.0 - config.tuning.animal_friction * time.delta_secs()).max(0.0);
-        let velocity_after_friction = animal.velocity() * friction_factor;
-        animal.set_velocity(velocity_after_friction);
+        let previous_translation = transform.translation;
+        let velocity = animal.velocity();
+
+        if !velocity.is_finite() || !animal.position.is_finite() || !animal.energy.is_finite() {
+            log.log(&format!(
+                "animal_state_invalid reason=non_finite_before_move x={:.3} y={:.3} vx={:.3} vy={:.3} energy={:.3}",
+                animal.position.x,
+                animal.position.y,
+                velocity.x,
+                velocity.y,
+                animal.energy
+            ));
+            animal.velocity = Vec2::ZERO;
+            if !animal.position.is_finite() {
+                animal.position = Vec2::ZERO;
+            }
+            if !animal.energy.is_finite() {
+                animal.energy = 0.0;
+            }
+            transform.translation = animal.position.extend(0.0);
+        }
+
         transform.translation += animal.velocity().extend(0.0) * time.delta_secs();
         ensure_torodial_world(&mut transform.translation, &config.world_bounds);
+
+        if !transform.translation.is_finite() {
+            log.log(&format!(
+                "animal_state_invalid reason=non_finite_translation_after_move prev_x={:.3} prev_y={:.3} vx={:.3} vy={:.3}",
+                previous_translation.x,
+                previous_translation.y,
+                animal.velocity.x,
+                animal.velocity.y,
+            ));
+            transform.translation = previous_translation;
+            animal.velocity = Vec2::ZERO;
+        }
+
         animal.set_position(transform.translation.xy());
 
         let speed_ratio = (animal.velocity().length() / config.tuning.animal_speed_reference).max(0.0);
@@ -303,7 +303,11 @@ fn move_animals(
             (config.tuning.animal_base_energy_drain_per_sec + speed_drain) * time.delta_secs();
         let updated_energy = (animal.energy() - energy_drain).max(0.0);
         animal.set_energy(updated_energy);
-        animal.size = animal_size_from_energy(animal.energy, &config);
+        if !animal.energy.is_finite() {
+            log.log("animal_state_invalid reason=non_finite_energy_after_drain");
+            animal.energy = 0.0;
+        }
+        animal.size = size_from_energy(animal.energy, &config);
     }
 }
 
@@ -319,7 +323,7 @@ fn grow_plants(
 
     for mut plant in &mut plants {
         plant.energy = (plant.energy + growth).min(config.tuning.plant_max_energy);
-        plant.size = plant_size_from_energy(plant.energy, &config);
+        plant.size = size_from_energy(plant.energy, &config);
     }
 }
 
@@ -365,21 +369,17 @@ fn reproduce_animals(
             let child_velocity = parent.velocity
                 + Vec2::new(rng.0.gen_range(-5.0..5.0), rng.0.gen_range(-5.0..5.0));
 
-            offspring.push(Animal {
-                position: child_position,
-                velocity: child_velocity,
-                energy: child_energy,
-                size: animal_size_from_energy(child_energy, &config),
-                color: parent.color,
-                vision: parent.vision,
-                genome: parent.genome.mutated(&mut rng.0, mutation_strength),
-                spawn_at: time.elapsed_secs(),
-                despawn_at: None,
-            });
+            offspring.push(Animal::new(
+                child_position,
+                child_velocity,
+                parent.genome.mutated(&mut rng.0, mutation_strength),
+                &time,
+                &config,
+            ));
         }
 
         parent.energy = (parent.energy - offspring_energy_total).max(0.0);
-        parent.size = animal_size_from_energy(parent.energy, &config);
+        parent.size = size_from_energy(parent.energy, &config);
     }
 
     for child in offspring {
@@ -418,6 +418,20 @@ fn despawn_starved_animals(
 
     if despawn_count > 0 {
         log.log(&format!("animal_starvation_despawn count={}", despawn_count));
+    }
+}
+
+fn log_removed_animals(
+    mut removed_animals: RemovedComponents<Animal>,
+    mut log: ResMut<SimulationLogger>,
+) {
+    let mut removed_count = 0usize;
+    for _ in removed_animals.read() {
+        removed_count += 1;
+    }
+
+    if removed_count > 0 {
+        log.log(&format!("animal_removed count={}", removed_count));
     }
 }
 
@@ -489,7 +503,7 @@ fn feed_animals_on_plant_collision(
     for (animal_entity, gained_energy) in &animal_gain_by_entity {
         if let Ok(mut animal) = entities.p1().get_mut(*animal_entity) {
             animal.energy += *gained_energy;
-            animal.size = animal_size_from_energy(animal.energy, &config);
+            animal.size = size_from_energy(animal.energy, &config);
         }
     }
 
@@ -499,7 +513,7 @@ fn feed_animals_on_plant_collision(
     for (plant_entity, taken_energy) in &plant_taken_by_entity {
         if let Ok(mut plant) = entities.p3().get_mut(*plant_entity) {
             plant.energy = (plant.energy - *taken_energy).max(0.0);
-            plant.size = plant_size_from_energy(plant.energy, &config);
+            plant.size = size_from_energy(plant.energy, &config);
             consumed_energy += *taken_energy;
             if plant.energy <= 0.0 {
                 depleted_plants += 1;
@@ -526,19 +540,7 @@ fn feed_animals_on_plant_collision(
     }
 }
 
-fn plant_size_from_energy(energy: f32, config: &SimulationConfig) -> f32 {
-    let clamped_energy = energy.max(0.0);
-    let size = config.tuning.plant_base_size
-        + config.tuning.plant_size_per_sqrt_energy * clamped_energy.sqrt();
-    size.max(1.0)
-}
 
-fn animal_size_from_energy(energy: f32, config: &SimulationConfig) -> f32 {
-    let clamped_energy = energy.max(0.0);
-    let size = config.tuning.animal_base_size
-        + config.tuning.animal_size_per_sqrt_energy * clamped_energy.sqrt();
-    size.max(1.0)
-}
 
 fn ensure_torodial_world(translation: &mut Vec3, world_bounds: &WorldBounds) {
     if translation.x < -world_bounds.half_width {

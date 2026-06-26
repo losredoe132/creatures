@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 
+use crate::config::SimulationConfig;
 use crate::mlp::Genome;
 use crate::sense::Vision;
+use crate::utils::size_from_energy;
 
 pub trait EnergyPosition {
     fn position(&self) -> Vec2;
@@ -56,6 +58,35 @@ pub struct Animal {
     pub genome: Genome,
     pub spawn_at: f32,
     pub despawn_at: Option<f32>,
+}
+
+impl Animal {
+    pub fn new(
+        position: Vec2,
+        velocity: Vec2,
+        genome: Genome,
+        time: &Res<Time>,
+
+        config: &SimulationConfig,
+    ) -> Self {
+        Self {
+            position,
+            velocity,
+            energy: config.spawn_config.animal_spawn_energy,
+            size: size_from_energy(config.spawn_config.animal_spawn_energy, &config),
+            color: Color::srgb(0.8, 0.2, 0.4),
+            vision: Vision {
+                range: config.tuning.vision_range.max(0.0),
+                field_of_view_radians: config
+                    .tuning
+                    .vision_fov_radians
+                    .clamp(0.0, std::f32::consts::PI * 2.0),
+            },
+            genome: genome,
+            spawn_at: time.elapsed_secs(),
+            despawn_at: None,
+        }
+    }
 }
 
 impl EnergyPosition for Animal {

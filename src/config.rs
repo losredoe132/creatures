@@ -31,7 +31,6 @@ pub struct TuningConfig {
     pub animal_max_speed: f32,
     pub speed_sigmoid_steepness: f32,
     pub animal_friction: f32,
-    pub animal_turn_accel_boost: f32,
     pub vision_range: f32,
     pub vision_fov_radians: f32,
     pub reproduction_energy_multiplier: f32,
@@ -89,7 +88,6 @@ impl TuningConfig {
             animal_max_speed: read_env_f32("ANIMAL_MAX_SPEED", 220.0),
             speed_sigmoid_steepness: read_env_f32("SPEED_SIGMOID_STEEPNESS", 4.0),
             animal_friction: read_env_f32("ANIMAL_FRICTION", 2.5),
-            animal_turn_accel_boost: read_env_f32("ANIMAL_TURN_ACCEL_BOOST", 8.0),
             vision_range: read_env_f32("VISION_RANGE", 200.0),
             vision_fov_radians: read_env_f32(
                 "VISION_FOV_RADIANS",

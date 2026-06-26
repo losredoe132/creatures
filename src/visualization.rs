@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
-use crate::brain::{think_with_vision, steering_to_acceleration};
-use crate::creature::{Animal, Movable, Plant};
+use crate::brain::think_with_vision;
+use crate::creature::{Animal, Plant};
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
 
 pub struct VisualizationPlugin;
@@ -11,7 +11,7 @@ impl Plugin for VisualizationPlugin {
         app.add_systems(Startup, setup_visualization)
             .add_systems(Update, update_time_display)
             .add_systems(Update, draw_animal_vision_cones)
-            .add_systems(Update, draw_animal_acceleration_arrows)
+            .add_systems(Update, draw_animal_movement_arrows)
             .add_systems(Update, attach_animal_visuals)
             .add_systems(Update, attach_plant_visuals)
             .add_systems(Update, update_animal_visual_sizes)
@@ -106,7 +106,7 @@ fn draw_vision_cone(
     gizmos.line_2d(origin, previous, edge_color);
 }
 
-fn draw_animal_acceleration_arrows(
+fn draw_animal_movement_arrows(
     mut gizmos: Gizmos,
     animals: Query<&Animal>,
     plants: Query<&Plant>,
@@ -136,29 +136,20 @@ fn draw_animal_acceleration_arrows(
 
     let arrow_color = Color::srgba(1.0, 0.95, 0.2, 0.9);
     for animal in &animals {
-        let steering = think_with_vision(
+        let movement = think_with_vision(
             &animal.vision,
             &animal.genome,
             animal.position,
             animal.velocity,
             &world,
         );
-
-        let velocity = animal.velocity();
-        let forward = if velocity.length_squared() > f32::EPSILON {
-            velocity.normalize()
-        } else {
-            Vec2::X
-        };
-
-        let acceleration = steering_to_acceleration(steering, forward);
-        let magnitude = acceleration.length();
+        let magnitude = movement.length();
         if magnitude <= f32::EPSILON {
             continue;
         }
 
-        let direction = acceleration / magnitude;
-        let arrow_len = (magnitude * 0.04).clamp(6.0, 20.0);
+        let direction = movement / magnitude;
+        let arrow_len = (magnitude * 16.0).clamp(6.0, 20.0);
         let start = animal.position;
         let end = start + direction * arrow_len;
         draw_arrow_2d(&mut gizmos, start, end, arrow_color);
