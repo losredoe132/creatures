@@ -6,12 +6,12 @@ use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::brain::think_with_vision;
-use crate::utils::size_from_energy;
 use crate::config::{SimulationConfig, WorldBounds};
 use crate::creature::{Animal, EnergyPosition, Movable, Plant};
 use crate::logging::{ConsoleBackend, SimulationLogger, TextFileBackend};
 use crate::mlp::Genome;
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
+use crate::utils::size_from_energy;
 
 pub struct SimulationPlugin;
 
@@ -66,10 +66,15 @@ fn initialize_simulation_log(mut commands: Commands) {
 
     let mut logger = SimulationLogger::new(start_timestamp_secs);
     logger.add_backend(ConsoleBackend);
-    if let Some(backend) = TextFileBackend::new(&format!("logs/simulation_{}.log", start_timestamp_secs)) {
+    if let Some(backend) =
+        TextFileBackend::new(&format!("logs/simulation_{}.log", start_timestamp_secs))
+    {
         logger.add_backend(backend);
     }
-    logger.log(&format!("simulation_start start_ts={} seed={}", start_timestamp_secs, seed));
+    logger.log(&format!(
+        "simulation_start start_ts={} seed={}",
+        start_timestamp_secs, seed
+    ));
 
     commands.insert_resource(logger);
     commands.insert_resource(SimulationRng(StdRng::seed_from_u64(seed)));
@@ -83,13 +88,12 @@ fn setup_world(
     mut rng: ResMut<SimulationRng>,
 ) {
     let animal = Animal::new(
-         Vec2::new(0.0, 0.0),
-         Vec2::new(0.0, 0.0),
-         Genome::random(&mut rng.0), 
-         &time, 
-            &config
+        Vec2::new(0.0, 0.0),
+        Vec2::new(0.0, 0.0),
+        Genome::random(&mut rng.0),
+        &time,
+        &config,
     );
-
 
     for _ in 0..config.spawn_config.n_plants {
         spawn_random_plant(&mut commands, &config, &mut rng.0, "startup", &mut *log);
@@ -150,7 +154,7 @@ fn random_spawn_animals(
             &config,
             &mut rng.0,
             "random",
-            & time,
+            &time,
             &mut *log,
         );
         spawn_clock.time_until_next += sample_spawn_delay(rate, &mut rng.0);
@@ -175,9 +179,9 @@ fn spawn_random_plant(
         color: Color::srgb(0.3, 0.6, 0.2),
     };
     log.log(&format!(
-            "plant_spawn source={} x={:.2} y={:.2}",
-            source, plant.position.x, plant.position.y
-        ));
+        "plant_spawn source={} x={:.2} y={:.2}",
+        source, plant.position.x, plant.position.y
+    ));
     commands.spawn(plant);
 }
 
@@ -190,17 +194,20 @@ fn spawn_random_animal(
     log: &mut SimulationLogger,
 ) {
     let energy = config.spawn_config.animal_spawn_energy;
-    let animal= Animal::new(
-         Vec2::new(0.0, 0.0),
-         Vec2::new(0.0, 0.0),
-         Genome::random(rng), 
-         time, 
-         config
+    let animal = Animal::new(
+        Vec2::new(
+            rng.gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),
+            rng.gen_range(-config.world_bounds.half_height..config.world_bounds.half_height),
+        ),
+        Vec2::new(rng.gen_range(0.0..100.0), rng.gen_range(0.0..100.0)),
+        Genome::random(rng),
+        time,
+        config,
     );
     log.log(&format!(
-            "animal_spawn source={} x={:.2} y={:.2}",
-            source, animal.position.x, animal.position.y
-        ));
+        "animal_spawn source={} x={:.2} y={:.2}",
+        source, animal.position.x, animal.position.y
+    ));
     commands.spawn(animal);
 }
 
@@ -295,10 +302,10 @@ fn move_animals(
 
         animal.set_position(transform.translation.xy());
 
-        let speed_ratio = (animal.velocity().length() / config.tuning.animal_speed_reference).max(0.0);
-        let speed_drain =
-            config.tuning.animal_speed_energy_drain_per_sec
-                * ((config.tuning.animal_speed_exponent * speed_ratio).exp() - 1.0);
+        let speed_ratio =
+            (animal.velocity().length() / config.tuning.animal_speed_reference).max(0.0);
+        let speed_drain = config.tuning.animal_speed_energy_drain_per_sec
+            * ((config.tuning.animal_speed_exponent * speed_ratio).exp() - 1.0);
         let energy_drain =
             (config.tuning.animal_base_energy_drain_per_sec + speed_drain) * time.delta_secs();
         let updated_energy = (animal.energy() - energy_drain).max(0.0);
@@ -311,11 +318,7 @@ fn move_animals(
     }
 }
 
-fn grow_plants(
-    mut plants: Query<&mut Plant>,
-    time: Res<Time>,
-    config: Res<SimulationConfig>,
-) {
+fn grow_plants(mut plants: Query<&mut Plant>, time: Res<Time>, config: Res<SimulationConfig>) {
     let growth = config.tuning.plant_growth_per_sec * time.delta_secs();
     if growth <= 0.0 {
         return;
@@ -366,8 +369,8 @@ fn reproduce_animals(
             ensure_torodial_world(&mut child_translation, &config.world_bounds);
             child_position = child_translation.xy();
 
-            let child_velocity = parent.velocity
-                + Vec2::new(rng.0.gen_range(-5.0..5.0), rng.0.gen_range(-5.0..5.0));
+            let child_velocity =
+                parent.velocity + Vec2::new(rng.0.gen_range(-5.0..5.0), rng.0.gen_range(-5.0..5.0));
 
             offspring.push(Animal::new(
                 child_position,
@@ -417,7 +420,10 @@ fn despawn_starved_animals(
     }
 
     if despawn_count > 0 {
-        log.log(&format!("animal_starvation_despawn count={}", despawn_count));
+        log.log(&format!(
+            "animal_starvation_despawn count={}",
+            despawn_count
+        ));
     }
 }
 
@@ -479,7 +485,10 @@ fn feed_animals_on_plant_collision(
                 continue;
             }
 
-            let already_taken = plant_taken_by_entity.get(plant_entity).copied().unwrap_or(0.0);
+            let already_taken = plant_taken_by_entity
+                .get(plant_entity)
+                .copied()
+                .unwrap_or(0.0);
             let remaining_energy = (*plant_energy - already_taken).max(0.0);
             if remaining_energy <= 0.0 {
                 continue;
@@ -523,7 +532,10 @@ fn feed_animals_on_plant_collision(
     }
 
     if !to_despawn.is_empty() {
-        log.log(&format!("collision_event type=despawn_plants count={}", to_despawn.len()));
+        log.log(&format!(
+            "collision_event type=despawn_plants count={}",
+            to_despawn.len()
+        ));
     }
 
     log.log(&format!(
@@ -539,8 +551,6 @@ fn feed_animals_on_plant_collision(
         commands.entity(entity).despawn();
     }
 }
-
-
 
 fn ensure_torodial_world(translation: &mut Vec3, world_bounds: &WorldBounds) {
     if translation.x < -world_bounds.half_width {

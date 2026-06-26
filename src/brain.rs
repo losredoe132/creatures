@@ -32,10 +32,11 @@ fn encode_perception_features(
 
     let plant_features = nearest_plant
         .map(|plant| {
-            let angle_normalized = (plant.angle_radians / std::f32::consts::PI).clamp(-1.0, 1.0);
+            let normalized_relative =
+                (plant.relative_position / vision_range).clamp(Vec2::splat(-1.0), Vec2::splat(1.0));
             [
-                angle_normalized.sin(),
-                angle_normalized.cos(),
+                normalized_relative.x,
+                normalized_relative.y,
                 (plant.distance / vision_range).clamp(0.0, 1.0),
             ]
         })
