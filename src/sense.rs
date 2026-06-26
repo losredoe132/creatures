@@ -12,7 +12,6 @@ pub struct Vision {
     pub field_of_view_radians: f32,
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PerceivedKind {
     Plant,
@@ -51,21 +50,19 @@ impl Sense for Vision {
     type Output = Vec<PerceivedObject>;
 
     fn sense(&self, origin: Vec2, forward: Vec2, world: &PerceptionWorld<'_>) -> Self::Output {
-        let forward = forward.normalize_or_zero();
-        let half_fov = self.field_of_view_radians * 0.5;
-
-        world
+        let sensed_objects: Vec<PerceivedObject> = world
             .plants
             .iter()
-            .filter_map(|plant| {
+            .filter(|plant| {
                 let offset = plant.position - origin;
-                within_vision_cone(offset, forward, self.range, half_fov).then_some(PerceivedObject {
-                    kind: PerceivedKind::Plant,
-                    angle_radians: forward.angle_to(offset.normalize_or_zero()),
-                    distance: offset.length(),
-                    radius: plant.radius,
-                    energy: plant.energy,
-                })
+                within_perceptive_field(offset, forward, self.range)
+            })
+            .map(|plant| PerceivedObject {
+                kind: PerceivedKind::Plant,
+                angle_radians: forward.angle_to((plant.position - origin).normalize_or_zero()),
+                distance: (plant.position - origin).length(),
+                radius: plant.radius,
+                energy: plant.energy,
             })
             // .chain(world.animals.iter().filter_map(|animal| {
             //     let offset = animal.position - origin;
@@ -77,20 +74,17 @@ impl Sense for Vision {
             //         energy: animal.energy,
             //     })
             // }))
-            .collect()
+            .collect();
+        println!("{} sensed {} objects\n", origin, sensed_objects.len());
+        sensed_objects
     }
 }
 
-fn within_vision_cone(offset: Vec2, forward: Vec2, range: f32, half_fov: f32) -> bool {
+fn within_perceptive_field(offset: Vec2, forward: Vec2, range: f32) -> bool {
     let distance = offset.length();
     if distance == 0.0 || distance > range {
         return false;
-    }
-
-    if forward == Vec2::ZERO {
+    } else {
         return true;
     }
-
-    let angle = forward.angle_to(offset.normalize());
-    angle.abs() <= half_fov
 }

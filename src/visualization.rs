@@ -10,7 +10,7 @@ impl Plugin for VisualizationPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup_visualization)
             .add_systems(Update, update_time_display)
-            .add_systems(Update, draw_animal_vision_cones)
+            .add_systems(Update, draw_animal_perceptive_field)
             .add_systems(Update, draw_animal_movement_arrows)
             .add_systems(Update, attach_animal_visuals)
             .add_systems(Update, attach_plant_visuals)
@@ -48,7 +48,7 @@ fn update_time_display(mut query: Query<&mut Text, With<TimeDisplay>>, time: Res
     }
 }
 
-fn draw_animal_vision_cones(mut gizmos: Gizmos, query: Query<&Animal>) {
+fn draw_animal_perceptive_field(mut gizmos: Gizmos, query: Query<&Animal>) {
     let cone_color = Color::srgba(0.2, 0.9, 1.0, 0.22);
     let edge_color = Color::srgba(0.2, 0.9, 1.0, 0.45);
 
@@ -61,56 +61,12 @@ fn draw_animal_vision_cones(mut gizmos: Gizmos, query: Query<&Animal>) {
             forward
         };
         let range = animal.vision.range;
-        let half_fov = animal.vision.field_of_view_radians * 0.5;
 
-        draw_vision_cone(
-            &mut gizmos,
-            origin,
-            forward,
-            range,
-            half_fov,
-            cone_color,
-            edge_color,
-        );
+        gizmos.circle_2d(origin, range, cone_color);
     }
 }
 
-fn draw_vision_cone(
-    gizmos: &mut Gizmos,
-    origin: Vec2,
-    forward: Vec2,
-    range: f32,
-    half_fov: f32,
-    fill_color: Color,
-    edge_color: Color,
-) {
-    if range <= 0.0 || half_fov <= 0.0 {
-        return;
-    }
-
-    let start_angle = forward.to_angle() - half_fov;
-    let end_angle = forward.to_angle() + half_fov;
-    let segments = 20usize;
-
-    let mut previous = origin + Vec2::from_angle(start_angle) * range;
-    gizmos.line_2d(origin, previous, edge_color);
-
-    for step in 1..=segments {
-        let t = step as f32 / segments as f32;
-        let angle = start_angle + (end_angle - start_angle) * t;
-        let point = origin + Vec2::from_angle(angle) * range;
-        gizmos.line_2d(previous, point, fill_color);
-        previous = point;
-    }
-
-    gizmos.line_2d(origin, previous, edge_color);
-}
-
-fn draw_animal_movement_arrows(
-    mut gizmos: Gizmos,
-    animals: Query<&Animal>,
-    plants: Query<&Plant>,
-) {
+fn draw_animal_movement_arrows(mut gizmos: Gizmos, animals: Query<&Animal>, plants: Query<&Plant>) {
     let plants_snapshot: Vec<PlantSnapshot> = plants
         .iter()
         .map(|plant| PlantSnapshot {
