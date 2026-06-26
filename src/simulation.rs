@@ -178,7 +178,7 @@ fn spawn_random_plant(
         size: size_from_energy(energy, config),
         color: Color::srgb(0.3, 0.6, 0.2),
     };
-    log.log(&format!(
+    log.debug(&format!(
         "plant_spawn source={} x={:.2} y={:.2}",
         source, plant.position.x, plant.position.y
     ));
@@ -204,7 +204,7 @@ fn spawn_random_animal(
         time,
         config,
     );
-    log.log(&format!(
+    log.debug(&format!(
         "animal_spawn source={} x={:.2} y={:.2}",
         source, animal.position.x, animal.position.y
     ));
@@ -267,7 +267,7 @@ fn move_animals(
         let velocity = animal.velocity();
 
         if !velocity.is_finite() || !animal.position.is_finite() || !animal.energy.is_finite() {
-            log.log(&format!(
+            log.warn(&format!(
                 "animal_state_invalid reason=non_finite_before_move x={:.3} y={:.3} vx={:.3} vy={:.3} energy={:.3}",
                 animal.position.x,
                 animal.position.y,
@@ -289,7 +289,7 @@ fn move_animals(
         ensure_torodial_world(&mut transform.translation, &config.world_bounds);
 
         if !transform.translation.is_finite() {
-            log.log(&format!(
+            log.warn(&format!(
                 "animal_state_invalid reason=non_finite_translation_after_move prev_x={:.3} prev_y={:.3} vx={:.3} vy={:.3}",
                 previous_translation.x,
                 previous_translation.y,
@@ -311,7 +311,7 @@ fn move_animals(
         let updated_energy = (animal.energy() - energy_drain).max(0.0);
         animal.set_energy(updated_energy);
         if !animal.energy.is_finite() {
-            log.log("animal_state_invalid reason=non_finite_energy_after_drain");
+            log.warn("animal_state_invalid reason=non_finite_energy_after_drain");
             animal.energy = 0.0;
         }
         animal.size = size_from_energy(animal.energy, &config);
@@ -390,7 +390,7 @@ fn reproduce_animals(
     }
 
     if reproduction_count > 0 {
-        log.log(&format!(
+        log.info(&format!(
             "animal_reproduction parents={} offspring={}",
             reproduction_count,
             reproduction_count * 2
@@ -408,7 +408,7 @@ fn despawn_starved_animals(
     for (entity, mut animal) in &mut animals {
         if animal.energy <= 0.0 {
             animal.despawn_at = Some(time.elapsed_secs());
-            log.log(&format!(
+            log.debug(&format!(
                 "animal_despawn reason=starvation spawn_at={:.3} despawn_at={:.3} genome={:?}",
                 animal.spawn_at,
                 animal.despawn_at.unwrap_or_default(),
@@ -420,7 +420,7 @@ fn despawn_starved_animals(
     }
 
     if despawn_count > 0 {
-        log.log(&format!(
+        log.debug(&format!(
             "animal_starvation_despawn count={}",
             despawn_count
         ));
@@ -437,7 +437,7 @@ fn log_removed_animals(
     }
 
     if removed_count > 0 {
-        log.log(&format!("animal_removed count={}", removed_count));
+        log.debug(&format!("animal_removed count={}", removed_count));
     }
 }
 
@@ -532,13 +532,13 @@ fn feed_animals_on_plant_collision(
     }
 
     if !to_despawn.is_empty() {
-        log.log(&format!(
+        log.debug(&format!(
             "collision_event type=despawn_plants count={}",
             to_despawn.len()
         ));
     }
 
-    log.log(&format!(
+    log.debug(&format!(
         "collision_event type=feeding collisions={} fed_animals={} touched_plants={} consumed_energy={:.2} depleted_plants={}",
         collision_count,
         animal_gain_by_entity.len(),

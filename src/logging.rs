@@ -4,7 +4,26 @@ use std::io::Write as IoWrite;
 
 /// A sink that receives log messages from [`SimulationLogger`].
 pub trait LogBackend: Send + Sync {
-    fn write(&mut self, start_timestamp_secs: u64, message: &str);
+    fn write(&mut self, start_timestamp_secs: u64, level: LogLevel, message: &str);
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LogLevel {
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+impl LogLevel {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Debug => "DEBUG",
+            Self::Info => "INFO",
+            Self::Warn => "WARN",
+            Self::Error => "ERROR",
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -15,8 +34,13 @@ pub trait LogBackend: Send + Sync {
 pub struct ConsoleBackend;
 
 impl LogBackend for ConsoleBackend {
-    fn write(&mut self, _start_timestamp_secs: u64, message: &str) {
-        info!("{}", message);
+    fn write(&mut self, _start_timestamp_secs: u64, level: LogLevel, message: &str) {
+        match level {
+            LogLevel::Debug => debug!("{}", message),
+            LogLevel::Info => info!("{}", message),
+            LogLevel::Warn => warn!("{}", message),
+            LogLevel::Error => error!("{}", message),
+        }
     }
 }
 
@@ -50,11 +74,13 @@ impl TextFileBackend {
 }
 
 impl LogBackend for TextFileBackend {
-    fn write(&mut self, start_timestamp_secs: u64, message: &str) {
+    fn write(&mut self, start_timestamp_secs: u64, level: LogLevel, message: &str) {
         let _ = writeln!(
             self.file,
-            "[simulation_start_ts={}] {}",
-            start_timestamp_secs, message
+            "[simulation_start_ts={}] [level={}] {}",
+            start_timestamp_secs,
+            level.as_str(),
+            message
         );
         let _ = self.file.flush();
     }
@@ -97,11 +123,17 @@ impl CsvBackend {
 }
 
 impl LogBackend for CsvBackend {
-    fn write(&mut self, start_timestamp_secs: u64, message: &str) {
+    fn write(&mut self, start_timestamp_secs: u64, level: LogLevel, message: &str) {
         // TODO: parse structured key=value fields from `message` and emit a
         //       proper CSV row.  For now, escape commas and write verbatim.
         let escaped = message.replace(',', ";");
-        let _ = writeln!(self.file, "{},{}", start_timestamp_secs, escaped);
+        let _ = writeln!(
+            self.file,
+            "{},{},{}",
+            start_timestamp_secs,
+            level.as_str(),
+            escaped
+        );
         let _ = self.file.flush();
     }
 }
@@ -117,7 +149,7 @@ impl LogBackend for CsvBackend {
 /// logger.add_backend(ConsoleBackend);
 /// logger.add_backend(TextFileBackend::new("logs/sim.log").unwrap());
 /// // later, in any system:
-/// logger.log("my_event key=value");
+/// logger.info("my_event key=value");
 /// ```
 #[derive(Resource)]
 pub struct SimulationLogger {
@@ -137,9 +169,29 @@ impl SimulationLogger {
         self.backends.push(Box::new(backend));
     }
 
-    pub fn log(&mut self, message: &str) {
+    pub fn log_with_level(&mut self, level: LogLevel, message: &str) {
         for backend in &mut self.backends {
-            backend.write(self.start_timestamp_secs, message);
+            backend.write(self.start_timestamp_secs, level, message);
         }
+    }
+
+    pub fn log(&mut self, message: &str) {
+        self.info(message);
+    }
+
+    pub fn debug(&mut self, message: &str) {
+        self.log_with_level(LogLevel::Debug, message);
+    }
+
+    pub fn info(&mut self, message: &str) {
+        self.log_with_level(LogLevel::Info, message);
+    }
+
+    pub fn warn(&mut self, message: &str) {
+        self.log_with_level(LogLevel::Warn, message);
+    }
+
+    pub fn error(&mut self, message: &str) {
+        self.log_with_level(LogLevel::Error, message);
     }
 }

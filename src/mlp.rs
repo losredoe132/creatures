@@ -45,23 +45,14 @@ pub fn mlp_movement(features: [f32; MLP_INPUTS], genome: &Genome) -> MovementOut
     let x = na::RowVector3::new(features[0], features[1], features[2]);
 
     // W: 3x2 (row-major slice)
-    //let w = na::Matrix3x2::from_row_slice(&genome.genes[0..(MLP_INPUTS * MLP_OUTPUTS)]);
-    let mut w: nalgebra::Matrix<
-        f32,
-        nalgebra::Const<3>,
-        nalgebra::Const<2>,
-        nalgebra::ArrayStorage<f32, 3, 2>,
-    > = na::Matrix3x2::zeros();
-    w[(0, 0)] = 1.0;
-    w[(1, 1)] = 1.0;
+    let w = na::Matrix3x2::from_row_slice(&genome.genes[0..(MLP_INPUTS * MLP_OUTPUTS)]);
 
     // b: 1x2
-    //let b_start = MLP_INPUTS * MLP_OUTPUTS;
-    // let b = na::RowVector2::from_row_slice(&genome.genes[b_start..b_start + MLP_OUTPUTS]);
-    let b = na::RowVector2::new(0.0, 0.1);
+    let b_start = MLP_INPUTS * MLP_OUTPUTS;
+    let b = na::RowVector2::from_row_slice(&genome.genes[b_start..b_start + MLP_OUTPUTS]);
 
     // y: 1x2
-    let y = x * w + b;
+    let y = x * w + b * 0.1;
 
     MovementOutput {
         vector: Vec2::new(y[0], y[1]),
