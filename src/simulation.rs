@@ -54,7 +54,10 @@ impl Plugin for SimulationPlugin {
             .insert_resource(AnimalSpawnClock::default())
             .insert_resource(PopulationSizeTracker::default())
             .add_systems(Startup, (initialize_simulation_log, setup_world).chain())
-            .add_systems(First, advance_global_frame_counter)
+            .add_systems(
+                First,
+                (advance_global_frame_counter, sync_logger_with_frame_counter).chain(),
+            )
             .add_systems(
                 Update,
                 (
@@ -75,6 +78,13 @@ impl Plugin for SimulationPlugin {
     }
 }
 
+fn sync_logger_with_frame_counter(
+    frame_counter: Res<GlobalFrameCounter>,
+    mut log: ResMut<SimulationLogger>,
+) {
+    log.set_frame(frame_counter.0);
+}
+
 fn log_population_size_changes(
     plants: Query<&Plant>,
     animals: Query<&Animal>,
@@ -82,7 +92,19 @@ fn log_population_size_changes(
     mut log: ResMut<SimulationLogger>,
 ) {
     let plant_count = plants.iter().count();
-    let animal_count = animals.iter().count();
+    let n_carnivores = animals
+        .iter()
+        .filter(|a| matches!(a.diet, Diet::Carnivore))
+        .count();
+
+    let n_herbivores = animals
+        .iter()
+        .filter(|a| matches!(a.diet, Diet::Herbivore))
+        .count();
+    let n_omnivores = animals
+        .iter()
+        .filter(|a| matches!(a.diet, Diet::Omnivore))
+        .count();
 
     if !tracker.initialized {
         tracker.plants = plant_count;
@@ -93,8 +115,9 @@ fn log_population_size_changes(
         return;
     }
 
-    if tracker.animals.carnivores + tracker.animals.herbivores + tracker.animals.omnivores
-        != animal_count
+    if tracker.animals.carnivores != n_carnivores
+        || tracker.animals.herbivores != n_herbivores
+        || tracker.animals.omnivores != n_omnivores
     {
         log.info(&format!(
             "population_size plants={} animals={:?}",
@@ -102,18 +125,9 @@ fn log_population_size_changes(
         ));
         tracker.plants = plant_count;
         tracker.animals = AnimalPopulation {
-            carnivores: animals
-                .iter()
-                .filter(|a| matches!(a.diet, Diet::Carnivore))
-                .count(),
-            herbivores: animals
-                .iter()
-                .filter(|a| matches!(a.diet, Diet::Herbivore))
-                .count(),
-            omnivores: animals
-                .iter()
-                .filter(|a| matches!(a.diet, Diet::Omnivore))
-                .count(),
+            carnivores: n_carnivores,
+            herbivores: n_herbivores,
+            omnivores: n_omnivores,
         };
     }
 }
