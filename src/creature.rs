@@ -8,7 +8,6 @@ use crate::simulation::GlobalFrameCounter;
 use crate::utils::size_from_energy;
 
 pub trait EnergyPosition {
-    fn position(&self) -> Vec2;
     fn set_position(&mut self, position: Vec2);
     fn energy(&self) -> f32;
     fn set_energy(&mut self, energy: f32);
@@ -17,10 +16,6 @@ pub trait EnergyPosition {
 pub trait Movable: EnergyPosition {
     fn velocity(&self) -> Vec2;
     fn set_velocity(&mut self, velocity: Vec2);
-    fn apply_acceleration(&mut self, acceleration: Vec2, delta_secs: f32) {
-        let new_velocity = self.velocity() + acceleration * delta_secs;
-        self.set_velocity(new_velocity);
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -73,10 +68,6 @@ pub struct Plant {
 }
 
 impl EnergyPosition for Plant {
-    fn position(&self) -> Vec2 {
-        self.position
-    }
-
     fn set_position(&mut self, position: Vec2) {
         self.position = position;
     }
@@ -132,10 +123,6 @@ impl Animal {
 }
 
 impl EnergyPosition for Animal {
-    fn position(&self) -> Vec2 {
-        self.position
-    }
-
     fn set_position(&mut self, position: Vec2) {
         self.position = position;
     }

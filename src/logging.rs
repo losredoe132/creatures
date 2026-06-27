@@ -8,6 +8,7 @@ pub trait LogBackend: Send + Sync {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum LogLevel {
     Debug,
     Info,
@@ -191,6 +192,7 @@ impl SimulationLogger {
         self.log_with_level(LogLevel::Warn, message);
     }
 
+    #[allow(dead_code)]
     pub fn error(&mut self, message: &str) {
         self.log_with_level(LogLevel::Error, message);
     }
