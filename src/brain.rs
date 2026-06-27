@@ -34,6 +34,7 @@ fn encode_perception_features(
     features[5] = animal_features[1];
     features[6] = animal_features[2];
     features[7] = animal_features[3];
+    features[8] = animal_features[4];
     features
 }
 
@@ -60,7 +61,7 @@ fn encode_plant_features(perceived_plants: &[PerceivedPlant], vision_range: f32)
         .unwrap_or([0.0; 4])
 }
 
-fn encode_animal_features(perceived_animals: &[PerceivedAnimal], vision_range: f32) -> [f32; 4] {
+fn encode_animal_features(perceived_animals: &[PerceivedAnimal], vision_range: f32) -> [f32; 5] {
     let nearest_animal = perceived_animals.iter().min_by(|left, right| {
         left.distance
             .partial_cmp(&right.distance)
@@ -78,7 +79,8 @@ fn encode_animal_features(perceived_animals: &[PerceivedAnimal], vision_range: f
                 normalized_relative.y,
                 (animal.distance / vision_range).clamp(0.0, 1.0),
                 (animal.energy / 100.0).clamp(0.0, 1.0),
+                animal.diet as u8 as f32, // Encode diet as a float (0.0, 1.0, 2.0)
             ]
         })
-        .unwrap_or([0.0; 4])
+        .unwrap_or([0.0; 5])
 }

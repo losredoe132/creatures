@@ -2,7 +2,7 @@ use bevy::prelude::Vec2;
 use nalgebra as na;
 use rand::Rng;
 
-pub const MLP_INPUTS: usize = 8;
+pub const MLP_INPUTS: usize = 9;
 pub const MLP_OUTPUTS: usize = 2;
 
 pub const GENOME_LEN: usize = MLP_INPUTS * MLP_OUTPUTS + MLP_OUTPUTS;
