@@ -16,6 +16,9 @@ use crate::utils::size_from_energy;
 pub struct SimulationPlugin;
 
 #[derive(Resource, Default)]
+pub struct GlobalFrameCounter(pub u64);
+
+#[derive(Resource, Default)]
 struct PlantSpawnClock {
     time_until_next: f32,
     initialized: bool,
@@ -32,9 +35,11 @@ struct SimulationRng(StdRng);
 
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(PlantSpawnClock::default())
+        app.insert_resource(GlobalFrameCounter::default())
+            .insert_resource(PlantSpawnClock::default())
             .insert_resource(AnimalSpawnClock::default())
             .add_systems(Startup, (initialize_simulation_log, setup_world).chain())
+            .add_systems(First, advance_global_frame_counter)
             .add_systems(
                 Update,
                 (
@@ -52,6 +57,10 @@ impl Plugin for SimulationPlugin {
             );
         app.add_systems(Last, despawn_animals_on_shutdown);
     }
+}
+
+fn advance_global_frame_counter(mut frame_counter: ResMut<GlobalFrameCounter>) {
+    frame_counter.0 = frame_counter.0.saturating_add(1);
 }
 
 fn despawn_animals_on_shutdown(
@@ -107,7 +116,7 @@ fn initialize_simulation_log(mut commands: Commands) {
 
 fn setup_world(
     mut commands: Commands,
-    time: Res<Time>,
+    frame_count: Res<GlobalFrameCounter>,
     mut log: ResMut<SimulationLogger>,
     config: Res<SimulationConfig>,
     mut rng: ResMut<SimulationRng>,
@@ -117,7 +126,7 @@ fn setup_world(
         Vec2::new(0.0, 0.0),
         Vec2::new(0.0, 0.0),
         Genome::random(&mut rng.0),
-        &time,
+        &frame_count,
         &config,
     );
 
@@ -157,6 +166,7 @@ fn random_spawn_plants(
 fn random_spawn_animals(
     mut commands: Commands,
     time: Res<Time>,
+    frame_count: Res<GlobalFrameCounter>,
     config: Res<SimulationConfig>,
     mut log: ResMut<SimulationLogger>,
     mut spawn_clock: ResMut<AnimalSpawnClock>,
@@ -180,7 +190,7 @@ fn random_spawn_animals(
             &config,
             &mut rng.0,
             "random",
-            &time,
+            &frame_count,
             &mut *log,
         );
         spawn_clock.time_until_next += sample_spawn_delay(rate, &mut rng.0);
@@ -216,7 +226,7 @@ fn spawn_random_animal(
     config: &SimulationConfig,
     rng: &mut impl Rng,
     source: &str,
-    time: &Res<Time>,
+    frame_count: &Res<GlobalFrameCounter>,
     log: &mut SimulationLogger,
 ) {
     let animal = Animal::new(
@@ -227,7 +237,7 @@ fn spawn_random_animal(
         ),
         Vec2::new(rng.gen_range(0.0..100.0), rng.gen_range(0.0..100.0)),
         Genome::random(rng),
-        time,
+        frame_count,
         config,
     );
     log.debug(&format!(
@@ -360,7 +370,7 @@ fn grow_plants(mut plants: Query<&mut Plant>, time: Res<Time>, config: Res<Simul
 fn reproduce_animals(
     mut commands: Commands,
     mut animals: Query<&mut Animal>,
-    time: Res<Time>,
+    frame_count: Res<GlobalFrameCounter>,
     mut log: ResMut<SimulationLogger>,
     config: Res<SimulationConfig>,
     mut rng: ResMut<SimulationRng>,
@@ -404,7 +414,7 @@ fn reproduce_animals(
                 child_position,
                 child_velocity,
                 parent.genome.mutated(&mut rng.0, mutation_strength),
-                &time,
+                &frame_count,
                 &config,
             ));
         }
@@ -428,17 +438,17 @@ fn reproduce_animals(
 
 fn despawn_starved_animals(
     mut commands: Commands,
-    time: Res<Time>,
+    frame_count: Res<GlobalFrameCounter>,
     mut animals: Query<(Entity, &mut Animal)>,
     mut log: ResMut<SimulationLogger>,
 ) {
     let mut despawn_count = 0usize;
     for (entity, mut animal) in &mut animals {
         if animal.energy <= 0.0 {
-            animal.despawn_at = Some(time.elapsed_secs());
+            animal.despawn_at = Some(frame_count.0 as u64);
             let lifetime_duration = animal.despawn_at.unwrap() - animal.spawn_at;
             log.info(&format!(
-                "animal_despawn,reason=starvation,spawn_at={:.3},despawn_at={:.3},lifetime={:?},genome={:?},diet={:?}",
+                "animal_despawn,reason=starvation,spawn_at_frame={},despawn_at_frame={},lifetime_frames={},genome={:?},diet={:?}",
                 animal.spawn_at,
                 animal.despawn_at.unwrap_or_default(),
                 lifetime_duration,

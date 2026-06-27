@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use crate::brain::think_with_vision;
 use crate::creature::{Animal, Diet, Plant};
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
+use crate::simulation::GlobalFrameCounter;
 pub struct VisualizationPlugin;
 
 impl Plugin for VisualizationPlugin {
@@ -25,7 +26,7 @@ fn setup_visualization(mut commands: Commands) {
     commands.spawn(Camera2d);
 
     commands.spawn((
-        Text::new("Time: 0.0s"),
+        Text::new("Frame: 0"),
         TextFont {
             font_size: FontSize::Px(14.0),
             ..default()
@@ -40,10 +41,12 @@ fn setup_visualization(mut commands: Commands) {
     ));
 }
 
-fn update_time_display(mut query: Query<&mut Text, With<TimeDisplay>>, time: Res<Time>) {
+fn update_time_display(
+    mut query: Query<&mut Text, With<TimeDisplay>>,
+    frame_count: Res<GlobalFrameCounter>,
+) {
     for mut text in &mut query {
-        let elapsed = time.elapsed_secs();
-        **text = format!("Time: {:.1}s", elapsed);
+        **text = format!("Frame: {}", frame_count.0);
     }
 }
 

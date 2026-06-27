@@ -4,6 +4,7 @@ use rand::Rng;
 use crate::config::SimulationConfig;
 use crate::mlp::Genome;
 use crate::sense::Vision;
+use crate::simulation::GlobalFrameCounter;
 use crate::utils::size_from_energy;
 
 pub trait EnergyPosition {
@@ -99,8 +100,8 @@ pub struct Animal {
     pub color: Color,
     pub vision: Vision,
     pub genome: Genome,
-    pub spawn_at: f32,
-    pub despawn_at: Option<f32>,
+    pub spawn_at: u64,
+    pub despawn_at: Option<u64>,
 }
 
 impl Animal {
@@ -109,7 +110,7 @@ impl Animal {
         position: Vec2,
         velocity: Vec2,
         genome: Genome,
-        time: &Res<Time>,
+        frame_count: &Res<GlobalFrameCounter>,
 
         config: &SimulationConfig,
     ) -> Self {
@@ -128,7 +129,7 @@ impl Animal {
                     .clamp(0.0, std::f32::consts::PI * 2.0),
             },
             genome: genome,
-            spawn_at: time.elapsed_secs(),
+            spawn_at: frame_count.0 as u64,
             despawn_at: None,
         }
     }
