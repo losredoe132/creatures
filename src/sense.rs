@@ -16,6 +16,7 @@ pub struct Vision {
 pub struct PerceivedAnimal {
     pub diet: Diet,
     pub relative_position: Vec2,
+    pub velocity: Vec2,
     pub distance: f32,
     pub energy: f32,
 }
@@ -37,6 +38,7 @@ pub struct PlantSnapshot {
 pub struct AnimalSnapshot {
     pub diet: Diet,
     pub position: Vec2,
+    pub velocity: Vec2,
     pub energy: f32,
 }
 
@@ -86,6 +88,7 @@ impl Sense for Vision {
                 PerceivedAnimal {
                     diet: animal.diet,
                     relative_position,
+                    velocity: animal.velocity,
                     distance: relative_position.length(),
                     energy: animal.energy,
                 }

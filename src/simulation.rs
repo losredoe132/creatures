@@ -30,6 +30,20 @@ struct AnimalSpawnClock {
     initialized: bool,
 }
 
+#[derive(Resource, Default, Debug)]
+struct AnimalPopulation {
+    carnivores: usize,
+    herbivores: usize,
+    omnivores: usize,
+}
+
+#[derive(Resource, Default)]
+struct PopulationSizeTracker {
+    plants: usize,
+    animals: AnimalPopulation,
+    initialized: bool,
+}
+
 #[derive(Resource)]
 struct SimulationRng(StdRng);
 
@@ -38,6 +52,7 @@ impl Plugin for SimulationPlugin {
         app.insert_resource(GlobalFrameCounter::default())
             .insert_resource(PlantSpawnClock::default())
             .insert_resource(AnimalSpawnClock::default())
+            .insert_resource(PopulationSizeTracker::default())
             .add_systems(Startup, (initialize_simulation_log, setup_world).chain())
             .add_systems(First, advance_global_frame_counter)
             .add_systems(
@@ -54,8 +69,52 @@ impl Plugin for SimulationPlugin {
                     reproduce_animals,
                 )
                     .chain(),
-            );
+            )
+            .add_systems(PostUpdate, log_population_size_changes);
         app.add_systems(Last, despawn_animals_on_shutdown);
+    }
+}
+
+fn log_population_size_changes(
+    plants: Query<&Plant>,
+    animals: Query<&Animal>,
+    mut tracker: ResMut<PopulationSizeTracker>,
+    mut log: ResMut<SimulationLogger>,
+) {
+    let plant_count = plants.iter().count();
+    let animal_count = animals.iter().count();
+
+    if !tracker.initialized {
+        tracker.plants = plant_count;
+        tracker.animals.carnivores = 0; // Assuming all animals are carnivores initially
+        tracker.animals.herbivores = 0;
+        tracker.animals.omnivores = 0;
+        tracker.initialized = true;
+        return;
+    }
+
+    if tracker.animals.carnivores + tracker.animals.herbivores + tracker.animals.omnivores
+        != animal_count
+    {
+        log.info(&format!(
+            "population_size plants={} animals={:?}",
+            plant_count, tracker.animals
+        ));
+        tracker.plants = plant_count;
+        tracker.animals = AnimalPopulation {
+            carnivores: animals
+                .iter()
+                .filter(|a| matches!(a.diet, Diet::Carnivore))
+                .count(),
+            herbivores: animals
+                .iter()
+                .filter(|a| matches!(a.diet, Diet::Herbivore))
+                .count(),
+            omnivores: animals
+                .iter()
+                .filter(|a| matches!(a.diet, Diet::Omnivore))
+                .count(),
+        };
     }
 }
 
@@ -300,6 +359,7 @@ fn think_animals(
         .map(|animal| AnimalSnapshot {
             diet: animal.diet,
             position: animal.position,
+            velocity: animal.velocity,
             energy: animal.energy,
         })
         .collect();

@@ -75,6 +75,7 @@ fn draw_animal_movement_arrows(mut gizmos: Gizmos, animals: Query<&Animal>, plan
         .map(|animal| AnimalSnapshot {
             diet: animal.diet,
             position: animal.position,
+            velocity: animal.velocity,
             energy: animal.energy,
         })
         .collect();

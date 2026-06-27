@@ -2,7 +2,7 @@ use bevy::prelude::Vec2;
 use nalgebra as na;
 use rand::Rng;
 
-pub const MLP_INPUTS: usize = 19;
+pub const MLP_INPUTS: usize = 25;
 pub const MLP_HIDDEN: usize = 9;
 pub const MLP_OUTPUTS: usize = 2;
 
@@ -68,7 +68,7 @@ pub fn mlp_movement(features: [f32; MLP_INPUTS], genome: &Genome) -> MovementOut
         na::RowSVector::from_row_slice(&genome.genes[b2_start..b2_start + MLP_OUTPUTS]);
 
     // y: 1x2
-    let y = hidden * w2 + b2*0.1;
+    let y = hidden * w2 + b2 * 0.1;
 
     MovementOutput {
         vector: Vec2::new(y[0], y[1]),
