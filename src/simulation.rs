@@ -50,6 +50,31 @@ impl Plugin for SimulationPlugin {
                 )
                     .chain(),
             );
+        app.add_systems(Last, despawn_animals_on_shutdown);
+    }
+}
+
+fn despawn_animals_on_shutdown(
+    mut exit_events: MessageReader<AppExit>,
+    mut commands: Commands,
+    animals: Query<Entity, With<Animal>>,
+    mut log: ResMut<SimulationLogger>,
+) {
+    if exit_events.read().next().is_none() {
+        return;
+    }
+
+    let mut despawn_count = 0usize;
+    for entity in &animals {
+        commands.entity(entity).despawn();
+        despawn_count += 1;
+    }
+
+    if despawn_count > 0 {
+        log.info(&format!(
+            "shutdown_cleanup despawned_animals={}",
+            despawn_count
+        ));
     }
 }
 
@@ -413,11 +438,12 @@ fn despawn_starved_animals(
             animal.despawn_at = Some(time.elapsed_secs());
             let lifetime_duration = animal.despawn_at.unwrap() - animal.spawn_at;
             log.info(&format!(
-                "animal_despawn,reason=starvation,spawn_at={:.3},despawn_at={:.3},lifetime={:?},genome={:?}",
+                "animal_despawn,reason=starvation,spawn_at={:.3},despawn_at={:.3},lifetime={:?},genome={:?},diet={:?}",
                 animal.spawn_at,
                 animal.despawn_at.unwrap_or_default(),
                 lifetime_duration,
-                animal.genome.genes
+                animal.genome.genes,
+                animal.diet
             ));
             commands.entity(entity).despawn();
             despawn_count += 1;
