@@ -43,7 +43,7 @@ impl Plugin for SimulationPlugin {
                     grow_plants,
                     random_spawn_plants,
                     random_spawn_animals,
-                    feed_animals_on_plant_collision,
+                    handle_object_collision,
                     despawn_starved_animals,
                     log_removed_animals,
                     reproduce_animals,
@@ -446,7 +446,7 @@ fn log_removed_animals(
     }
 }
 
-fn feed_animals_on_plant_collision(
+fn handle_object_collision(
     mut commands: Commands,
     config: Res<SimulationConfig>,
     mut log: ResMut<SimulationLogger>,
