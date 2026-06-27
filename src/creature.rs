@@ -83,6 +83,8 @@ impl EnergyPosition for Plant {
 
 #[derive(Component)]
 pub struct Animal {
+    pub id: u64,
+    pub parent_id: Option<u64>,
     pub diet: Diet,
     pub position: Vec2,
     pub velocity: Vec2,
@@ -98,6 +100,8 @@ pub struct Animal {
 
 impl Animal {
     pub fn new(
+        id: u64,
+        parent_id: Option<u64>,
         diet: Diet,
         position: Vec2,
         velocity: Vec2,
@@ -107,6 +111,8 @@ impl Animal {
         family: u32,
     ) -> Self {
         Self {
+            id,
+            parent_id,
             diet,
             position,
             velocity,

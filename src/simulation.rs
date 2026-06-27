@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use rand::Rng;
+use rand::RngCore;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 use std::collections::{BTreeMap, HashMap};
@@ -235,6 +236,8 @@ fn setup_world(
     mut rng: ResMut<SimulationRng>,
 ) {
     let animal = Animal::new(
+        rng.0.next_u64(),
+        None,
         Diet::random(&mut rng.0),
         Vec2::new(0.0, 0.0),
         Vec2::new(0.0, 0.0),
@@ -356,6 +359,8 @@ fn spawn_random_animal(
     log: &mut SimulationLogger,
 ) {
     let animal = Animal::new(
+        rng.next_u64(),
+        None,
         Diet::random(rng),
         Vec2::new(
             rng.gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),
@@ -539,6 +544,8 @@ fn reproduce_animals(
             let child_velocity = Vec2::new(0.0, 0.0);
 
             offspring.push(Animal::new(
+                rng.0.next_u64(),
+                Some(parent.id),
                 parent.diet,
                 child_position,
                 child_velocity,
@@ -624,6 +631,8 @@ fn handle_object_collision(
     #[derive(Clone, Copy)]
     struct AnimalFoodSnapshot {
         entity: Entity,
+        id: u64,
+        parent_id: Option<u64>,
         position: Vec2,
         radius: f32,
         energy: f32,
@@ -644,6 +653,8 @@ fn handle_object_collision(
         .iter()
         .map(|(entity, animal)| AnimalFoodSnapshot {
             entity,
+            id: animal.id,
+            parent_id: animal.parent_id,
             position: animal.position,
             radius: animal.size,
             energy: animal.energy,
@@ -718,12 +729,6 @@ fn handle_object_collision(
             continue;
         }
 
-        let prey_diet_filter = match predator.diet {
-            Diet::Omnivore => Some(Diet::Herbivore),
-            Diet::Carnivore => None,
-            Diet::Herbivore => continue,
-        };
-
         let metabolism_ratio = predator.diet.metabolism_ratio(&config);
 
         for prey in &animals_snapshot {
@@ -731,12 +736,47 @@ fn handle_object_collision(
                 continue;
             }
 
-            if matches!(prey.diet, Diet::Carnivore) && predator.family == prey.family {
+            if prey.parent_id == Some(predator.id) {
                 continue;
             }
 
-            if let Some(required_diet) = prey_diet_filter {
-                if prey.diet != required_diet {
+            // if matches!(prey.diet, Diet::Carnivore) && predator.family == prey.family {
+            //     continue;
+            // }
+
+            let can_predate = match predator.diet {
+                Diet::Herbivore => false,
+                Diet::Omnivore => {
+                    matches!(prey.diet, Diet::Herbivore | Diet::Omnivore | Diet::Carnivore)
+                }
+                Diet::Carnivore => {
+                    matches!(prey.diet, Diet::Herbivore | Diet::Omnivore | Diet::Carnivore)
+                }
+            };
+            if !can_predate {
+                continue;
+            }
+
+            // If both animals can predate each other, choose a single winner for this
+            // frame so they do not both consume and immediately cancel out.
+            let prey_can_counter_predate = match prey.diet {
+                Diet::Herbivore => false,
+                Diet::Omnivore => {
+                    matches!(predator.diet, Diet::Herbivore | Diet::Omnivore | Diet::Carnivore)
+                }
+                Diet::Carnivore => {
+                    matches!(predator.diet, Diet::Herbivore | Diet::Omnivore | Diet::Carnivore)
+                }
+            };
+            if prey_can_counter_predate {
+                let predator_wins_duel = if predator.energy > prey.energy {
+                    true
+                } else if predator.energy < prey.energy {
+                    false
+                } else {
+                    predator.entity.to_bits() > prey.entity.to_bits()
+                };
+                if !predator_wins_duel {
                     continue;
                 }
             }
