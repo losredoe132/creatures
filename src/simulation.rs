@@ -282,10 +282,22 @@ fn random_spawn_animals(
     time: Res<Time>,
     frame_count: Res<GlobalFrameCounter>,
     config: Res<SimulationConfig>,
+    animals: Query<&Animal>,
     mut log: ResMut<SimulationLogger>,
     mut spawn_clock: ResMut<AnimalSpawnClock>,
     mut rng: ResMut<SimulationRng>,
 ) {
+    if animals.iter().next().is_none() {
+        spawn_random_animal(
+            &mut commands,
+            &config,
+            &mut rng.0,
+            "population_recovery",
+            &frame_count,
+            &mut *log,
+        );
+    }
+
     let rate = config.tuning.animal_spawn_rate_per_sec;
     if rate <= 0.0 {
         spawn_clock.initialized = false;
@@ -616,6 +628,7 @@ fn handle_object_collision(
         radius: f32,
         energy: f32,
         diet: Diet,
+        family: u32,
     }
 
     #[derive(Clone, Copy)]
@@ -635,6 +648,7 @@ fn handle_object_collision(
             radius: animal.size,
             energy: animal.energy,
             diet: animal.diet,
+            family: animal.family,
         })
         .collect::<Vec<_>>();
     let plants_snapshot = entities
@@ -717,7 +731,7 @@ fn handle_object_collision(
                 continue;
             }
 
-            if matches!(prey.diet, Diet::Carnivore) {
+            if matches!(prey.diet, Diet::Carnivore) && predator.family == prey.family {
                 continue;
             }
 
