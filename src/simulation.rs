@@ -408,10 +408,12 @@ fn despawn_starved_animals(
     for (entity, mut animal) in &mut animals {
         if animal.energy <= 0.0 {
             animal.despawn_at = Some(time.elapsed_secs());
-            log.debug(&format!(
-                "animal_despawn reason=starvation spawn_at={:.3} despawn_at={:.3} genome={:?}",
+            let lifetime_duration = animal.despawn_at.unwrap() - animal.spawn_at;
+            log.info(&format!(
+                "animal_despawn,reason=starvation,spawn_at={:.3},despawn_at={:.3},lifetime={:?},genome={:?}",
                 animal.spawn_at,
                 animal.despawn_at.unwrap_or_default(),
+                lifetime_duration,
                 animal.genome.genes
             ));
             commands.entity(entity).despawn();

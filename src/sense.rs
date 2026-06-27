@@ -68,6 +68,26 @@ impl Sense for Vision {
                     energy: plant.energy,
                 }
             })
+            .chain(
+                world
+                    .animals
+                    .iter()
+                    .filter(|animal| {
+                        let offset = animal.position - origin;
+                        within_perceptive_field(offset, forward, self.range)
+                    })
+                    .map(|animal| {
+                        let relative_position = animal.position - origin;
+
+                        PerceivedObject {
+                            kind: PerceivedKind::Animal,
+                            relative_position,
+                            distance: relative_position.length(),
+                            radius: animal.radius,
+                            energy: animal.energy,
+                        }
+                    }),
+            )
             .collect();
         debug!("Sensed objects: {:?}", sensed_objects);
         sensed_objects
