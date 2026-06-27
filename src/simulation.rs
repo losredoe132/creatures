@@ -63,10 +63,33 @@ fn advance_global_frame_counter(mut frame_counter: ResMut<GlobalFrameCounter>) {
     frame_counter.0 = frame_counter.0.saturating_add(1);
 }
 
+fn despawn_animal(
+    commands: &mut Commands,
+    log: &mut SimulationLogger,
+    entity: Entity,
+    animal: &mut Animal,
+    reason: &str,
+    despawn_frame: u64,
+) {
+    animal.despawn_at = Some(despawn_frame);
+    let lifetime_duration = animal.despawn_at.unwrap_or_default() - animal.spawn_at;
+    log.info(&format!(
+        "animal_despawn,reason={},spawn_at_frame={},despawn_at_frame={},lifetime_frames={},genome={:?},diet={:?}",
+        reason,
+        animal.spawn_at,
+        animal.despawn_at.unwrap_or_default(),
+        lifetime_duration,
+        animal.genome.genes,
+        animal.diet
+    ));
+    commands.entity(entity).despawn();
+}
+
 fn despawn_animals_on_shutdown(
     mut exit_events: MessageReader<AppExit>,
     mut commands: Commands,
-    animals: Query<Entity, With<Animal>>,
+    frame_count: Res<GlobalFrameCounter>,
+    mut animals: Query<(Entity, &mut Animal)>,
     mut log: ResMut<SimulationLogger>,
 ) {
     if exit_events.read().next().is_none() {
@@ -74,8 +97,15 @@ fn despawn_animals_on_shutdown(
     }
 
     let mut despawn_count = 0usize;
-    for entity in &animals {
-        commands.entity(entity).despawn();
+    for (entity, mut animal) in &mut animals {
+        despawn_animal(
+            &mut commands,
+            &mut log,
+            entity,
+            &mut animal,
+            "shutdown",
+            frame_count.0,
+        );
         despawn_count += 1;
     }
 
@@ -445,17 +475,14 @@ fn despawn_starved_animals(
     let mut despawn_count = 0usize;
     for (entity, mut animal) in &mut animals {
         if animal.energy <= 0.0 {
-            animal.despawn_at = Some(frame_count.0 as u64);
-            let lifetime_duration = animal.despawn_at.unwrap() - animal.spawn_at;
-            log.info(&format!(
-                "animal_despawn,reason=starvation,spawn_at_frame={},despawn_at_frame={},lifetime_frames={},genome={:?},diet={:?}",
-                animal.spawn_at,
-                animal.despawn_at.unwrap_or_default(),
-                lifetime_duration,
-                animal.genome.genes,
-                animal.diet
-            ));
-            commands.entity(entity).despawn();
+            despawn_animal(
+                &mut commands,
+                &mut log,
+                entity,
+                &mut animal,
+                "starvation",
+                frame_count.0,
+            );
             despawn_count += 1;
         }
     }
