@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use rand::Rng;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::brain::think_with_vision;
@@ -30,7 +30,7 @@ struct AnimalSpawnClock {
     initialized: bool,
 }
 
-#[derive(Resource, Default, Debug)]
+#[derive(Resource, Default, Debug, PartialEq, Eq)]
 struct AnimalPopulation {
     carnivores: usize,
     herbivores: usize,
@@ -41,6 +41,7 @@ struct AnimalPopulation {
 struct PopulationSizeTracker {
     plants: usize,
     animals: AnimalPopulation,
+    families: BTreeMap<u32, usize>,
     initialized: bool,
 }
 
@@ -92,43 +93,51 @@ fn log_population_size_changes(
     mut log: ResMut<SimulationLogger>,
 ) {
     let plant_count = plants.iter().count();
-    let n_carnivores = animals
-        .iter()
-        .filter(|a| matches!(a.diet, Diet::Carnivore))
-        .count();
+    let mut population = AnimalPopulation::default();
+    let mut family_counts: BTreeMap<u32, usize> = BTreeMap::new();
 
-    let n_herbivores = animals
-        .iter()
-        .filter(|a| matches!(a.diet, Diet::Herbivore))
-        .count();
-    let n_omnivores = animals
-        .iter()
-        .filter(|a| matches!(a.diet, Diet::Omnivore))
-        .count();
+    for animal in &animals {
+        match animal.diet {
+            Diet::Carnivore => population.carnivores += 1,
+            Diet::Herbivore => population.herbivores += 1,
+            Diet::Omnivore => population.omnivores += 1,
+        }
+        *family_counts.entry(animal.family).or_insert(0) += 1;
+    }
 
     if !tracker.initialized {
         tracker.plants = plant_count;
-        tracker.animals.carnivores = 0; // Assuming all animals are carnivores initially
-        tracker.animals.herbivores = 0;
-        tracker.animals.omnivores = 0;
+        tracker.animals = population;
+        tracker.families = family_counts;
         tracker.initialized = true;
         return;
     }
 
-    if tracker.animals.carnivores != n_carnivores
-        || tracker.animals.herbivores != n_herbivores
-        || tracker.animals.omnivores != n_omnivores
+    if tracker.plants != plant_count
+        || tracker.animals != population
+        || tracker.families != family_counts
     {
+        let family_report = if family_counts.is_empty() {
+            "none".to_string()
+        } else {
+            family_counts
+                .iter()
+                .map(|(family, count)| format!("{}:{}", family, count))
+                .collect::<Vec<String>>()
+                .join("|")
+        };
+
         log.info(&format!(
-            "population_size plants={} animals={:?}",
-            plant_count, tracker.animals
+            "population_size plants={} animals={{carnivores:{} herbivores:{} omnivores:{}}} families={}",
+            plant_count,
+            population.carnivores,
+            population.herbivores,
+            population.omnivores,
+            family_report
         ));
         tracker.plants = plant_count;
-        tracker.animals = AnimalPopulation {
-            carnivores: n_carnivores,
-            herbivores: n_herbivores,
-            omnivores: n_omnivores,
-        };
+        tracker.animals = population;
+        tracker.families = family_counts;
     }
 }
 
