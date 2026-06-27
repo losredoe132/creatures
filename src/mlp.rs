@@ -2,7 +2,7 @@ use bevy::prelude::Vec2;
 use nalgebra as na;
 use rand::Rng;
 
-pub const MLP_INPUTS: usize = 9;
+pub const MLP_INPUTS: usize = 19;
 pub const MLP_HIDDEN: usize = 9;
 pub const MLP_OUTPUTS: usize = 2;
 

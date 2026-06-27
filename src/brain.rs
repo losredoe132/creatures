@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use crate::creature::Diet;
 use crate::mlp::{Genome, MLP_INPUTS, mlp_movement};
 use crate::sense::{PerceivedAnimal, PerceivedPlant, Sense, Vision};
 
@@ -22,7 +23,30 @@ fn encode_perception_features(
     vision_range: f32,
 ) -> [f32; MLP_INPUTS] {
     let plant_features = encode_plant_features(perceived_plants, vision_range);
-    let animal_features = encode_animal_features(perceived_animals, vision_range);
+
+    let carnivore_animals: Vec<PerceivedAnimal> = perceived_animals
+        .iter()
+        .copied()
+        .filter(|animal| animal.diet == Diet::Carnivore)
+        .collect();
+
+    let animal_features_carnivors = encode_animal_features(&carnivore_animals, vision_range);
+
+    let herbivore_animals: Vec<PerceivedAnimal> = perceived_animals
+        .iter()
+        .copied()
+        .filter(|animal| animal.diet == Diet::Herbivore)
+        .collect();
+
+    let animal_features_herbivores = encode_animal_features(&herbivore_animals, vision_range);
+
+    let omnivore_animals: Vec<PerceivedAnimal> = perceived_animals
+        .iter()
+        .copied()
+        .filter(|animal| animal.diet == Diet::Omnivore)
+        .collect();
+
+    let animal_features_omnivores = encode_animal_features(&omnivore_animals, vision_range);
 
     debug!("Plant features: {:?}", plant_features);
     let mut features = [0.0f32; MLP_INPUTS];
@@ -30,11 +54,21 @@ fn encode_perception_features(
     features[1] = plant_features[1];
     features[2] = plant_features[2];
     features[3] = plant_features[3];
-    features[4] = animal_features[0];
-    features[5] = animal_features[1];
-    features[6] = animal_features[2];
-    features[7] = animal_features[3];
-    features[8] = animal_features[4];
+    features[4] = animal_features_carnivors[0];
+    features[5] = animal_features_carnivors[1];
+    features[6] = animal_features_carnivors[2];
+    features[7] = animal_features_carnivors[3];
+    features[8] = animal_features_carnivors[4];
+    features[9] = animal_features_herbivores[0];
+    features[10] = animal_features_herbivores[1];
+    features[11] = animal_features_herbivores[2];
+    features[12] = animal_features_herbivores[3];
+    features[13] = animal_features_herbivores[4];
+    features[14] = animal_features_omnivores[0];
+    features[15] = animal_features_omnivores[1];
+    features[16] = animal_features_omnivores[2];
+    features[17] = animal_features_omnivores[3];
+    features[18] = animal_features_omnivores[4];
     features
 }
 
