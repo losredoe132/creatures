@@ -1,4 +1,4 @@
-use crate::creature::{Animal, Diet, Plant};
+use crate::creature::Diet;
 use bevy::prelude::*;
 
 pub trait Sense {
@@ -10,7 +10,6 @@ pub trait Sense {
 #[derive(Debug, Clone, Copy)]
 pub struct Vision {
     pub range: f32,
-    pub field_of_view_radians: f32,
 }
 
 #[derive(Debug, Clone, Copy)]

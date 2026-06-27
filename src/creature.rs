@@ -123,10 +123,6 @@ impl Animal {
             color: diet.color(),
             vision: Vision {
                 range: config.tuning.vision_range.max(0.0),
-                field_of_view_radians: config
-                    .tuning
-                    .vision_fov_radians
-                    .clamp(0.0, std::f32::consts::PI * 2.0),
             },
             genome: genome,
             spawn_at: frame_count.0 as u64,
