@@ -556,11 +556,27 @@ fn handle_object_collision(
             continue;
         }
 
+        let prey_diet_filter = match predator.diet {
+            Diet::Omnivore => Some(Diet::Herbivore),
+            Diet::Carnivore => None,
+            Diet::Herbivore => continue,
+        };
+
         let metabolism_ratio = predator.diet.metabolism_ratio(&config);
 
         for prey in &animals_snapshot {
             if predator.entity == prey.entity {
                 continue;
+            }
+
+            if matches!(prey.diet, Diet::Carnivore) {
+                continue;
+            }
+
+            if let Some(required_diet) = prey_diet_filter {
+                if prey.diet != required_diet {
+                    continue;
+                }
             }
 
             let combined_radius = predator.radius + prey.radius;
