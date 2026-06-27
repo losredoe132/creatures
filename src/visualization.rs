@@ -1,9 +1,8 @@
 use bevy::prelude::*;
 
 use crate::brain::think_with_vision;
-use crate::creature::{Animal, Plant};
+use crate::creature::{Animal, Diet, Plant};
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
-
 pub struct VisualizationPlugin;
 
 impl Plugin for VisualizationPlugin {
@@ -49,17 +48,10 @@ fn update_time_display(mut query: Query<&mut Text, With<TimeDisplay>>, time: Res
 }
 
 fn draw_animal_perceptive_field(mut gizmos: Gizmos, query: Query<&Animal>) {
-    let cone_color = Color::srgba(0.2, 0.9, 1.0, 0.22);
-    let edge_color = Color::srgba(0.2, 0.9, 1.0, 0.45);
-
+    let cone_color = Color::srgba(0.2, 0.9, 1.0, 0.12);
     for animal in &query {
         let origin = animal.position;
-        let forward = animal.velocity.normalize_or_zero();
-        let forward = if forward == Vec2::ZERO {
-            Vec2::X
-        } else {
-            forward
-        };
+
         let range = animal.vision.range;
 
         gizmos.circle_2d(origin, range, cone_color);
@@ -79,6 +71,7 @@ fn draw_animal_movement_arrows(mut gizmos: Gizmos, animals: Query<&Animal>, plan
     let animals_snapshot: Vec<AnimalSnapshot> = animals
         .iter()
         .map(|animal| AnimalSnapshot {
+            diet: animal.diet,
             position: animal.position,
             energy: animal.energy,
             radius: animal.size,

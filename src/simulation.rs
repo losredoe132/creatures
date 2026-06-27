@@ -7,7 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::brain::think_with_vision;
 use crate::config::{SimulationConfig, WorldBounds};
-use crate::creature::{Animal, EnergyPosition, Movable, Plant};
+use crate::creature::{Animal, Diet, EnergyPosition, Movable, Plant};
 use crate::logging::{ConsoleBackend, SimulationLogger, TextFileBackend};
 use crate::mlp::Genome;
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
@@ -88,6 +88,7 @@ fn setup_world(
     mut rng: ResMut<SimulationRng>,
 ) {
     let animal = Animal::new(
+        Diet::random(&mut rng.0),
         Vec2::new(0.0, 0.0),
         Vec2::new(0.0, 0.0),
         Genome::random(&mut rng.0),
@@ -193,8 +194,8 @@ fn spawn_random_animal(
     time: &Res<Time>,
     log: &mut SimulationLogger,
 ) {
-    let energy = config.spawn_config.animal_spawn_energy;
     let animal = Animal::new(
+        Diet::random(rng),
         Vec2::new(
             rng.gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),
             rng.gen_range(-config.world_bounds.half_height..config.world_bounds.half_height),
@@ -205,8 +206,8 @@ fn spawn_random_animal(
         config,
     );
     log.debug(&format!(
-        "animal_spawn source={} x={:.2} y={:.2}",
-        source, animal.position.x, animal.position.y
+        "animal_spawn source={} x={:.2} y={:.2}, diet ={:?}",
+        source, animal.position.x, animal.position.y, animal.diet
     ));
     commands.spawn(animal);
 }
@@ -233,6 +234,7 @@ fn think_animals(
     let animals_snapshot: Vec<AnimalSnapshot> = animals
         .iter()
         .map(|animal| AnimalSnapshot {
+            diet: animal.diet,
             position: animal.position,
             energy: animal.energy,
             radius: animal.size,
@@ -373,6 +375,7 @@ fn reproduce_animals(
                 parent.velocity + Vec2::new(rng.0.gen_range(-5.0..5.0), rng.0.gen_range(-5.0..5.0));
 
             offspring.push(Animal::new(
+                parent.diet,
                 child_position,
                 child_velocity,
                 parent.genome.mutated(&mut rng.0, mutation_strength),
@@ -454,18 +457,46 @@ fn feed_animals_on_plant_collision(
         Query<&mut Plant>,
     )>,
 ) {
+    #[derive(Clone, Copy)]
+    struct AnimalFoodSnapshot {
+        entity: Entity,
+        position: Vec2,
+        radius: f32,
+        energy: f32,
+        diet: Diet,
+    }
+
+    #[derive(Clone, Copy)]
+    struct PlantFoodSnapshot {
+        entity: Entity,
+        position: Vec2,
+        radius: f32,
+        energy: f32,
+    }
+
     let animals_snapshot = entities
         .p0()
         .iter()
-        .map(|(entity, animal)| (entity, animal.position, animal.size))
+        .map(|(entity, animal)| AnimalFoodSnapshot {
+            entity,
+            position: animal.position,
+            radius: animal.size,
+            energy: animal.energy,
+            diet: animal.diet,
+        })
         .collect::<Vec<_>>();
     let plants_snapshot = entities
         .p2()
         .iter()
-        .map(|(entity, plant)| (entity, plant.position, plant.size, plant.energy))
+        .map(|(entity, plant)| PlantFoodSnapshot {
+            entity,
+            position: plant.position,
+            radius: plant.size,
+            energy: plant.energy,
+        })
         .collect::<Vec<_>>();
 
-    if animals_snapshot.is_empty() || plants_snapshot.is_empty() {
+    if animals_snapshot.is_empty() {
         return;
     }
 
@@ -476,22 +507,74 @@ fn feed_animals_on_plant_collision(
 
     let mut animal_gain_by_entity: HashMap<Entity, f32> = HashMap::new();
     let mut plant_taken_by_entity: HashMap<Entity, f32> = HashMap::new();
+    let mut prey_taken_by_entity: HashMap<Entity, f32> = HashMap::new();
     let mut collision_count = 0usize;
+    let mut plant_collision_count = 0usize;
+    let mut animal_collision_count = 0usize;
 
-    for (animal_entity, animal_position, animal_radius) in &animals_snapshot {
-        for (plant_entity, plant_position, plant_radius, plant_energy) in &plants_snapshot {
-            let combined_radius = *animal_radius + *plant_radius;
-            let overlaps = animal_position.distance_squared(*plant_position)
+    if !plants_snapshot.is_empty() {
+        for predator in &animals_snapshot {
+            if !predator.diet.can_eat_plants() {
+                continue;
+            }
+
+            let metabolism_ratio = predator.diet.metabolism_ratio(&config);
+
+            for plant in &plants_snapshot {
+                let combined_radius = predator.radius + plant.radius;
+                let overlaps = predator.position.distance_squared(plant.position)
+                    <= combined_radius * combined_radius;
+                if !overlaps {
+                    continue;
+                }
+
+                let already_taken = plant_taken_by_entity
+                    .get(&plant.entity)
+                    .copied()
+                    .unwrap_or(0.0);
+                let remaining_energy = (plant.energy - already_taken).max(0.0);
+                if remaining_energy <= 0.0 {
+                    continue;
+                }
+
+                let taken = consume_per_collision.min(remaining_energy);
+                if taken <= 0.0 {
+                    continue;
+                }
+
+                collision_count += 1;
+                plant_collision_count += 1;
+                *animal_gain_by_entity.entry(predator.entity).or_insert(0.0) +=
+                    taken * metabolism_ratio;
+                *plant_taken_by_entity.entry(plant.entity).or_insert(0.0) += taken;
+            }
+        }
+    }
+
+    for predator in &animals_snapshot {
+        if !predator.diet.can_eat_animals() {
+            continue;
+        }
+
+        let metabolism_ratio = predator.diet.metabolism_ratio(&config);
+
+        for prey in &animals_snapshot {
+            if predator.entity == prey.entity {
+                continue;
+            }
+
+            let combined_radius = predator.radius + prey.radius;
+            let overlaps = predator.position.distance_squared(prey.position)
                 <= combined_radius * combined_radius;
             if !overlaps {
                 continue;
             }
 
-            let already_taken = plant_taken_by_entity
-                .get(plant_entity)
+            let already_taken = prey_taken_by_entity
+                .get(&prey.entity)
                 .copied()
                 .unwrap_or(0.0);
-            let remaining_energy = (*plant_energy - already_taken).max(0.0);
+            let remaining_energy = (prey.energy - already_taken).max(0.0);
             if remaining_energy <= 0.0 {
                 continue;
             }
@@ -502,13 +585,11 @@ fn feed_animals_on_plant_collision(
             }
 
             collision_count += 1;
-            *animal_gain_by_entity.entry(*animal_entity).or_insert(0.0) += taken;
-            *plant_taken_by_entity.entry(*plant_entity).or_insert(0.0) += taken;
+            animal_collision_count += 1;
+            *animal_gain_by_entity.entry(predator.entity).or_insert(0.0) +=
+                taken * metabolism_ratio;
+            *prey_taken_by_entity.entry(prey.entity).or_insert(0.0) += taken;
         }
-    }
-
-    if collision_count == 0 {
-        return;
     }
 
     for (animal_entity, gained_energy) in &animal_gain_by_entity {
@@ -533,6 +614,19 @@ fn feed_animals_on_plant_collision(
         }
     }
 
+    let mut depleted_prey = 0usize;
+    for (prey_entity, taken_energy) in &prey_taken_by_entity {
+        if let Ok(mut prey) = entities.p1().get_mut(*prey_entity) {
+            prey.energy = (prey.energy - *taken_energy).max(0.0);
+            prey.size = size_from_energy(prey.energy, &config);
+            consumed_energy += *taken_energy;
+            if prey.energy <= 0.0 {
+                depleted_prey += 1;
+                to_despawn.push(*prey_entity);
+            }
+        }
+    }
+
     if !to_despawn.is_empty() {
         log.debug(&format!(
             "collision_event type=despawn_plants count={}",
@@ -541,12 +635,16 @@ fn feed_animals_on_plant_collision(
     }
 
     log.debug(&format!(
-        "collision_event type=feeding collisions={} fed_animals={} touched_plants={} consumed_energy={:.2} depleted_plants={}",
+        "collision_event type=feeding collisions={} plant_collisions={} animal_collisions={} fed_animals={} touched_plants={} touched_prey={} consumed_energy={:.2} depleted_plants={} depleted_prey={}",
         collision_count,
+        plant_collision_count,
+        animal_collision_count,
         animal_gain_by_entity.len(),
         plant_taken_by_entity.len(),
+        prey_taken_by_entity.len(),
         consumed_energy,
         depleted_plants
+        ,depleted_prey
     ));
 
     for entity in to_despawn {

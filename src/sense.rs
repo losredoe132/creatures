@@ -1,3 +1,4 @@
+use crate::creature::{Animal, Diet, Plant};
 use bevy::prelude::*;
 
 pub trait Sense {
@@ -12,18 +13,18 @@ pub struct Vision {
     pub field_of_view_radians: f32,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PerceivedKind {
-    Plant,
-    Animal,
+#[derive(Debug, Clone, Copy)]
+pub struct PerceivedAnimal {
+    pub diet: Diet,
+    pub relative_position: Vec2,
+    pub distance: f32,
+    pub energy: f32,
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct PerceivedObject {
-    pub kind: PerceivedKind,
+pub struct PerceivedPlant {
     pub relative_position: Vec2,
     pub distance: f32,
-    pub radius: f32,
     pub energy: f32,
 }
 
@@ -36,6 +37,7 @@ pub struct PlantSnapshot {
 
 #[derive(Debug, Clone, Copy)]
 pub struct AnimalSnapshot {
+    pub diet: Diet,
     pub position: Vec2,
     pub energy: f32,
     pub radius: f32,
@@ -46,11 +48,17 @@ pub struct PerceptionWorld<'a> {
     pub animals: &'a [AnimalSnapshot],
 }
 
+#[derive(Debug, Clone)]
+pub struct PerceivedVision {
+    pub plants: Vec<PerceivedPlant>,
+    pub animals: Vec<PerceivedAnimal>,
+}
+
 impl Sense for Vision {
-    type Output = Vec<PerceivedObject>;
+    type Output = PerceivedVision;
 
     fn sense(&self, origin: Vec2, forward: Vec2, world: &PerceptionWorld<'_>) -> Self::Output {
-        let sensed_objects: Vec<PerceivedObject> = world
+        let plants: Vec<PerceivedPlant> = world
             .plants
             .iter()
             .filter(|plant| {
@@ -60,37 +68,39 @@ impl Sense for Vision {
             .map(|plant| {
                 let relative_position = plant.position - origin;
 
-                PerceivedObject {
-                    kind: PerceivedKind::Plant,
+                PerceivedPlant {
                     relative_position,
                     distance: relative_position.length(),
-                    radius: plant.radius,
                     energy: plant.energy,
                 }
             })
-            .chain(
-                world
-                    .animals
-                    .iter()
-                    .filter(|animal| {
-                        let offset = animal.position - origin;
-                        within_perceptive_field(offset, forward, self.range)
-                    })
-                    .map(|animal| {
-                        let relative_position = animal.position - origin;
-
-                        PerceivedObject {
-                            kind: PerceivedKind::Animal,
-                            relative_position,
-                            distance: relative_position.length(),
-                            radius: animal.radius,
-                            energy: animal.energy,
-                        }
-                    }),
-            )
             .collect();
-        debug!("Sensed objects: {:?}", sensed_objects);
-        sensed_objects
+
+        let animals: Vec<PerceivedAnimal> = world
+            .animals
+            .iter()
+            .filter(|animal| {
+                let offset = animal.position - origin;
+                within_perceptive_field(offset, forward, self.range)
+            })
+            .map(|animal| {
+                let relative_position = animal.position - origin;
+
+                PerceivedAnimal {
+                    diet: animal.diet,
+                    relative_position,
+                    distance: relative_position.length(),
+                    energy: animal.energy,
+                }
+            })
+            .collect();
+
+        debug!(
+            "Sensed objects: plants={} animals={}",
+            plants.len(),
+            animals.len()
+        );
+        PerceivedVision { plants, animals }
     }
 }
 

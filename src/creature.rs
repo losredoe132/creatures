@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use rand::Rng;
 
 use crate::config::SimulationConfig;
 use crate::mlp::Genome;
@@ -18,6 +19,47 @@ pub trait Movable: EnergyPosition {
     fn apply_acceleration(&mut self, acceleration: Vec2, delta_secs: f32) {
         let new_velocity = self.velocity() + acceleration * delta_secs;
         self.set_velocity(new_velocity);
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Diet {
+    Herbivore,
+    Omnivore,
+    Carnivore,
+}
+
+impl Diet {
+    pub fn random(rng: &mut impl Rng) -> Self {
+        match rng.gen_range(0..3) {
+            0 => Self::Herbivore,
+            1 => Self::Omnivore,
+            _ => Self::Carnivore,
+        }
+    }
+
+    pub fn can_eat_plants(self) -> bool {
+        matches!(self, Self::Herbivore | Self::Omnivore)
+    }
+
+    pub fn can_eat_animals(self) -> bool {
+        matches!(self, Self::Omnivore | Self::Carnivore)
+    }
+
+    pub fn metabolism_ratio(self, config: &SimulationConfig) -> f32 {
+        match self {
+            Self::Herbivore => config.tuning.herbivore_metabolism_ratio.max(0.0),
+            Self::Omnivore => 1.0,
+            Self::Carnivore => config.tuning.carnivore_metabolism_ratio.max(0.0),
+        }
+    }
+
+    pub fn color(self) -> Color {
+        match self {
+            Self::Herbivore => Color::srgb(0.0, 0.8, 0.0),
+            Self::Omnivore => Color::srgb(0.5, 0.5, 0.0),
+            Self::Carnivore => Color::srgb(1.0, 0.0, 0.0),
+        }
     }
 }
 
@@ -49,6 +91,7 @@ impl EnergyPosition for Plant {
 
 #[derive(Component)]
 pub struct Animal {
+    pub diet: Diet,
     pub position: Vec2,
     pub velocity: Vec2,
     pub energy: f32,
@@ -62,6 +105,7 @@ pub struct Animal {
 
 impl Animal {
     pub fn new(
+        diet: Diet,
         position: Vec2,
         velocity: Vec2,
         genome: Genome,
@@ -70,11 +114,12 @@ impl Animal {
         config: &SimulationConfig,
     ) -> Self {
         Self {
+            diet,
             position,
             velocity,
             energy: config.spawn_config.animal_spawn_energy,
             size: size_from_energy(config.spawn_config.animal_spawn_energy, &config),
-            color: Color::srgb(0.8, 0.2, 0.4),
+            color: diet.color(),
             vision: Vision {
                 range: config.tuning.vision_range.max(0.0),
                 field_of_view_radians: config

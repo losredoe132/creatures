@@ -16,6 +16,8 @@ pub struct SpawnConfig {
 #[derive(Resource, Debug, Clone, Copy)]
 pub struct TuningConfig {
     pub plant_consume_per_collision: f32,
+    pub herbivore_metabolism_ratio: f32,
+    pub carnivore_metabolism_ratio: f32,
     pub plant_growth_per_sec: f32,
     pub plant_max_energy: f32,
     pub plant_spawn_rate_per_sec: f32,
@@ -67,6 +69,8 @@ impl TuningConfig {
                 "PLANT_CONSUME_PER_COLLISION",
                 read_env_f32("PLANT_CONSUME_PER_CELL", 20.0),
             ),
+            herbivore_metabolism_ratio: read_env_f32("HERBIVORE_METABOLISM_RATIO", 1.0),
+            carnivore_metabolism_ratio: read_env_f32("CARNIVORE_METABOLISM_RATIO", 1.0),
             plant_growth_per_sec: read_env_f32("PLANT_GROWTH_PER_SEC", 0.05),
             plant_max_energy: read_env_f32("PLANT_MAX_ENERGY", 120.0),
             plant_spawn_rate_per_sec: read_env_f32("PLANT_SPAWN_RATE_PER_SEC", 0.1),
@@ -89,10 +93,7 @@ impl TuningConfig {
             speed_sigmoid_steepness: read_env_f32("SPEED_SIGMOID_STEEPNESS", 4.0),
             animal_friction: read_env_f32("ANIMAL_FRICTION", 2.5),
             vision_range: read_env_f32("VISION_RANGE", 200.0),
-            vision_fov_radians: read_env_f32(
-                "VISION_FOV_RADIANS",
-                std::f32::consts::FRAC_PI_4,
-            ),
+            vision_fov_radians: read_env_f32("VISION_FOV_RADIANS", std::f32::consts::FRAC_PI_4),
             reproduction_energy_multiplier: read_env_f32("REPRODUCTION_ENERGY_MULTIPLIER", 3.0),
             offspring_energy_jitter: read_env_f32("OFFSPRING_ENERGY_JITTER", 0.1),
             genome_mutation_strength: read_env_f32("GENOME_MUTATION_STRENGTH", 0.05),
@@ -123,4 +124,3 @@ fn read_env_usize(name: &str, default: usize) -> usize {
         .and_then(|value| value.parse::<usize>().ok())
         .unwrap_or(default)
 }
-
