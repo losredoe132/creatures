@@ -604,6 +604,7 @@ fn handle_object_collision(
     mut commands: Commands,
     config: Res<SimulationConfig>,
     mut log: ResMut<SimulationLogger>,
+    frame_count: Res<GlobalFrameCounter>,
     mut entities: ParamSet<(
         Query<(Entity, &Animal)>,
         Query<&mut Animal>,
@@ -750,8 +751,6 @@ fn handle_object_collision(
                 continue;
             }
 
-            collision_count += 1;
-            animal_collision_count += 1;
             *animal_gain_by_entity.entry(predator.entity).or_insert(0.0) +=
                 taken * metabolism_ratio;
             *prey_taken_by_entity.entry(prey.entity).or_insert(0.0) += taken;
@@ -765,7 +764,6 @@ fn handle_object_collision(
         }
     }
 
-    let mut to_despawn = Vec::new();
     let mut consumed_energy = 0.0;
     let mut depleted_plants = 0usize;
     for (plant_entity, taken_energy) in &plant_taken_by_entity {
@@ -775,7 +773,7 @@ fn handle_object_collision(
             consumed_energy += *taken_energy;
             if plant.energy <= 0.0 {
                 depleted_plants += 1;
-                to_despawn.push(*plant_entity);
+                commands.entity(*plant_entity).despawn();
             }
         }
     }
@@ -788,15 +786,18 @@ fn handle_object_collision(
             consumed_energy += *taken_energy;
             if prey.energy <= 0.0 {
                 depleted_prey += 1;
-                to_despawn.push(*prey_entity);
+                despawn_animal(
+                    &mut commands,
+                    &mut *log,
+                    *prey_entity,
+                    &mut prey,
+                    "collision",
+                    frame_count.0,
+                );
             }
         }
     }
 
-
-    for entity in to_despawn {
-        commands.entity(entity).despawn();
-    }
 }
 
 fn ensure_torodial_world(translation: &mut Vec3, world_bounds: &WorldBounds) {

@@ -55,7 +55,9 @@ pub fn mlp_movement(features: [f32; MLP_INPUTS], genome: &Genome) -> MovementOut
         na::RowSVector::from_row_slice(&genome.genes[b1_start..b1_start + MLP_HIDDEN]);
 
     // hidden: 1x9
-    let hidden = (x * w1 + b1).map(|v| v.max(0.0)); // ReLU activation
+    let hidden = (x * w1 + b1);
+    //let hidden_activated = hidden.map(|v| v.max(0.0)); // ReLU activation
+    let hidden_activated = hidden.map(|v| v.tanh()); // tanh activation
 
     // W2: 9x2 (row-major slice)
     let w2_start = b1_start + MLP_HIDDEN;
@@ -68,7 +70,7 @@ pub fn mlp_movement(features: [f32; MLP_INPUTS], genome: &Genome) -> MovementOut
         na::RowSVector::from_row_slice(&genome.genes[b2_start..b2_start + MLP_OUTPUTS]);
 
     // y: 1x2
-    let y = hidden * w2 + b2 * 0.0;
+    let y = hidden_activated * w2 + b2 * 0.0;
 
     MovementOutput {
         vector: Vec2::new(y[0], y[1]),
