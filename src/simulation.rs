@@ -787,25 +787,6 @@ fn handle_object_collision(
         }
     }
 
-    if !to_despawn.is_empty() {
-        log.debug(&format!(
-            "collision_event type=despawn_plants count={}",
-            to_despawn.len()
-        ));
-    }
-
-    log.debug(&format!(
-        "collision_event type=feeding collisions={} plant_collisions={} animal_collisions={} fed_animals={} touched_plants={} touched_prey={} consumed_energy={:.2} depleted_plants={} depleted_prey={}",
-        collision_count,
-        plant_collision_count,
-        animal_collision_count,
-        animal_gain_by_entity.len(),
-        plant_taken_by_entity.len(),
-        prey_taken_by_entity.len(),
-        consumed_energy,
-        depleted_plants
-        ,depleted_prey
-    ));
 
     for entity in to_despawn {
         commands.entity(entity).despawn();

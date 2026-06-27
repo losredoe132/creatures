@@ -48,7 +48,6 @@ fn encode_perception_features(
 
     let animal_features_omnivores = encode_animal_features(&omnivore_animals, vision_range);
 
-    debug!("Plant features: {:?}", plant_features);
     let mut features = [0.0f32; MLP_INPUTS];
     features[0] = plant_features[0];
     features[1] = plant_features[1];
@@ -79,8 +78,6 @@ fn encode_plant_features(perceived_plants: &[PerceivedPlant], vision_range: f32)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    debug!("Nearest plant: {:?}", nearest_plant);
-
     nearest_plant
         .map(|plant| {
             let normalized_relative =
@@ -101,8 +98,6 @@ fn encode_animal_features(perceived_animals: &[PerceivedAnimal], vision_range: f
             .partial_cmp(&right.distance)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
-
-    debug!("Nearest animal: {:?}", nearest_animal);
 
     nearest_animal
         .map(|animal| {

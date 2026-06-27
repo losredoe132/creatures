@@ -95,11 +95,7 @@ impl Sense for Vision {
             })
             .collect();
 
-        debug!(
-            "Sensed objects: plants={} animals={}",
-            plants.len(),
-            animals.len()
-        );
+        
         PerceivedVision { plants, animals }
     }
 }
