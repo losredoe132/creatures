@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::brain::think_with_vision;
-use crate::creature::{Animal, Diet, Plant};
+use crate::creature::{Animal, Plant};
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
 use crate::simulation::GlobalFrameCounter;
 pub struct VisualizationPlugin;
@@ -67,7 +67,6 @@ fn draw_animal_movement_arrows(mut gizmos: Gizmos, animals: Query<&Animal>, plan
         .map(|plant| PlantSnapshot {
             position: plant.position,
             energy: plant.energy,
-            radius: plant.size,
         })
         .collect();
 
@@ -77,7 +76,6 @@ fn draw_animal_movement_arrows(mut gizmos: Gizmos, animals: Query<&Animal>, plan
             diet: animal.diet,
             position: animal.position,
             energy: animal.energy,
-            radius: animal.size,
         })
         .collect();
 

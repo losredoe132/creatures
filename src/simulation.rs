@@ -292,7 +292,6 @@ fn think_animals(
         .map(|plant| PlantSnapshot {
             position: plant.position,
             energy: plant.energy,
-            radius: plant.size,
         })
         .collect();
 
@@ -302,7 +301,6 @@ fn think_animals(
             diet: animal.diet,
             position: animal.position,
             energy: animal.energy,
-            radius: animal.size,
         })
         .collect();
 

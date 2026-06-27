@@ -31,7 +31,6 @@ pub struct PerceivedPlant {
 pub struct PlantSnapshot {
     pub position: Vec2,
     pub energy: f32,
-    pub radius: f32,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -39,7 +38,6 @@ pub struct AnimalSnapshot {
     pub diet: Diet,
     pub position: Vec2,
     pub energy: f32,
-    pub radius: f32,
 }
 
 pub struct PerceptionWorld<'a> {
