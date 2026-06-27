@@ -3,9 +3,11 @@ use nalgebra as na;
 use rand::Rng;
 
 pub const MLP_INPUTS: usize = 9;
+pub const MLP_HIDDEN: usize = 9;
 pub const MLP_OUTPUTS: usize = 2;
 
-pub const GENOME_LEN: usize = MLP_INPUTS * MLP_OUTPUTS + MLP_OUTPUTS;
+pub const GENOME_LEN: usize =
+    MLP_INPUTS * MLP_HIDDEN + MLP_HIDDEN + MLP_HIDDEN * MLP_OUTPUTS + MLP_OUTPUTS;
 
 #[derive(Debug, Clone)]
 pub struct Genome {
@@ -43,17 +45,30 @@ pub fn mlp_movement(features: [f32; MLP_INPUTS], genome: &Genome) -> MovementOut
     // x: 1x3
     let x: na::RowSVector<f32, MLP_INPUTS> = na::RowSVector::from_row_slice(&features);
 
-    // W: 3x2 (row-major slice)
-    let w: na::SMatrix<f32, MLP_INPUTS, MLP_OUTPUTS> =
-        na::SMatrix::from_row_slice(&genome.genes[0..(MLP_INPUTS * MLP_OUTPUTS)]);
+    // W1: 9x9 (row-major slice)
+    let w1: na::SMatrix<f32, MLP_INPUTS, MLP_HIDDEN> =
+        na::SMatrix::from_row_slice(&genome.genes[0..(MLP_INPUTS * MLP_HIDDEN)]);
 
-    // b: 1x2
-    let b_start = MLP_INPUTS * MLP_OUTPUTS;
-    let b: na::RowSVector<f32, MLP_OUTPUTS> =
-        na::RowSVector::from_row_slice(&genome.genes[b_start..b_start + MLP_OUTPUTS]);
+    // b1: 1x9
+    let b1_start = MLP_INPUTS * MLP_HIDDEN;
+    let b1: na::RowSVector<f32, MLP_HIDDEN> =
+        na::RowSVector::from_row_slice(&genome.genes[b1_start..b1_start + MLP_HIDDEN]);
+
+    // hidden: 1x9
+    let hidden = (x * w1 + b1).map(|v| v.max(0.0)); // ReLU activation
+
+    // W2: 9x2 (row-major slice)
+    let w2_start = b1_start + MLP_HIDDEN;
+    let w2: na::SMatrix<f32, MLP_HIDDEN, MLP_OUTPUTS> =
+        na::SMatrix::from_row_slice(&genome.genes[w2_start..w2_start + MLP_HIDDEN * MLP_OUTPUTS]);
+
+    // b2: 1x2
+    let b2_start = w2_start + MLP_HIDDEN * MLP_OUTPUTS;
+    let b2: na::RowSVector<f32, MLP_OUTPUTS> =
+        na::RowSVector::from_row_slice(&genome.genes[b2_start..b2_start + MLP_OUTPUTS]);
 
     // y: 1x2
-    let y = x * w + b;
+    let y = hidden * w2 + b2*0.1;
 
     MovementOutput {
         vector: Vec2::new(y[0], y[1]),
