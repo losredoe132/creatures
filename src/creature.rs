@@ -49,7 +49,7 @@ impl Diet {
     pub fn metabolism_ratio(self, config: &SimulationConfig) -> f32 {
         match self {
             Self::Herbivore => config.tuning.herbivore_metabolism_ratio.max(0.0),
-            Self::Omnivore => 1.0,
+            Self::Omnivore => config.tuning.omnivore_metabolism_ratio.max(0.0),
             Self::Carnivore => config.tuning.carnivore_metabolism_ratio.max(0.0),
         }
     }
