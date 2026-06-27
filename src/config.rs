@@ -88,7 +88,7 @@ impl TuningConfig {
             animal_inertia: read_env_f32("ANIMAL_INERTIA", 0.8),
             animal_max_speed: read_env_f32("ANIMAL_MAX_SPEED", 220.0),
             vision_range: read_env_f32("VISION_RANGE", 200.0),
-            reproduction_energy_multiplier: read_env_f32("REPRODUCTION_ENERGY_MULTIPLIER", 3.0),
+            reproduction_energy_multiplier: read_env_f32("REPRODUCTION_ENERGY_MULTIPLIER", 8.0),
             offspring_energy_jitter: read_env_f32("OFFSPRING_ENERGY_JITTER", 0.1),
             genome_mutation_strength: read_env_f32("GENOME_MUTATION_STRENGTH", 0.05),
             reproduction_position_jitter: read_env_f32("REPRODUCTION_POSITION_JITTER", 18.0),

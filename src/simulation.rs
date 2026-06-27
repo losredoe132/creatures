@@ -495,9 +495,8 @@ fn reproduce_animals(
     config: Res<SimulationConfig>,
     mut rng: ResMut<SimulationRng>,
 ) {
-    let spawn_energy = config.spawn_config.animal_spawn_energy.max(0.1);
-    let threshold = spawn_energy * config.tuning.reproduction_energy_multiplier.max(1.0);
-    let jitter = config.tuning.offspring_energy_jitter.max(0.0);
+    let spawn_energy = config.spawn_config.animal_spawn_energy;
+    let threshold = spawn_energy * config.tuning.reproduction_energy_multiplier;
     let mutation_strength = config.tuning.genome_mutation_strength.max(0.0);
     let position_jitter = config.tuning.reproduction_position_jitter.max(0.0);
 
@@ -513,8 +512,7 @@ fn reproduce_animals(
         let mut offspring_energy_total = 0.0;
 
         for _ in 0..2 {
-            let energy_factor = 1.0 + rng.0.gen_range(-jitter..jitter);
-            let child_energy = (spawn_energy * energy_factor).max(0.1);
+            let child_energy = spawn_energy ;
             offspring_energy_total += child_energy;
 
             let mut child_position = parent.position
@@ -526,8 +524,7 @@ fn reproduce_animals(
             ensure_torodial_world(&mut child_translation, &config.world_bounds);
             child_position = child_translation.xy();
 
-            let child_velocity =
-                parent.velocity + Vec2::new(rng.0.gen_range(-5.0..5.0), rng.0.gen_range(-5.0..5.0));
+            let child_velocity = Vec2::new(0.0, 0.0);
 
             offspring.push(Animal::new(
                 parent.diet,
@@ -540,7 +537,7 @@ fn reproduce_animals(
             ));
         }
 
-        parent.energy = (parent.energy - offspring_energy_total).max(0.0);
+        parent.energy = (parent.energy - offspring_energy_total- 2.0*spawn_energy).max(0.0);
         parent.size = size_from_energy(parent.energy, &config);
     }
 

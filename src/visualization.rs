@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::brain::think_with_vision;
+use crate::config::SimulationConfig;
 use crate::creature::{Animal, Plant};
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
 use crate::simulation::GlobalFrameCounter;
@@ -10,6 +11,7 @@ impl Plugin for VisualizationPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup_visualization)
             .add_systems(Update, update_time_display)
+            .add_systems(Update, draw_world_boundary)
             .add_systems(Update, draw_animal_perceptive_field)
             .add_systems(Update, draw_animal_movement_arrows)
             .add_systems(Update, attach_animal_visuals)
@@ -48,6 +50,23 @@ fn update_time_display(
     for mut text in &mut query {
         **text = format!("Frame: {}", frame_count.0);
     }
+}
+
+fn draw_world_boundary(mut gizmos: Gizmos, config: Res<SimulationConfig>) {
+    let bounds = &config.world_bounds;
+    let half_w = bounds.half_width;
+    let half_h = bounds.half_height;
+    let boundary_color = Color::srgba(0.5, 0.5, 0.5, 0.6);
+
+    let top_left = Vec2::new(-half_w, half_h);
+    let top_right = Vec2::new(half_w, half_h);
+    let bottom_right = Vec2::new(half_w, -half_h);
+    let bottom_left = Vec2::new(-half_w, -half_h);
+
+    gizmos.line_2d(top_left, top_right, boundary_color);
+    gizmos.line_2d(top_right, bottom_right, boundary_color);
+    gizmos.line_2d(bottom_right, bottom_left, boundary_color);
+    gizmos.line_2d(bottom_left, top_left, boundary_color);
 }
 
 fn draw_animal_perceptive_field(mut gizmos: Gizmos, query: Query<&Animal>) {
@@ -156,7 +175,7 @@ fn attach_plant_visuals(
     for (entity, plant) in &query {
         commands.entity(entity).insert((
             Mesh2d(meshes.add(Circle::new(1.0))),
-            MeshMaterial2d(materials.add(plant.color)),
+            MeshMaterial2d(materials.add(Color::srgba(0.3, 0.5, 0.3, 0.9))),
             Transform::from_translation(plant.position.extend(0.0))
                 .with_scale(Vec3::splat(plant.size)),
         ));

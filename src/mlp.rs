@@ -55,22 +55,22 @@ pub fn mlp_movement(features: [f32; MLP_INPUTS], genome: &Genome) -> MovementOut
         na::RowSVector::from_row_slice(&genome.genes[b1_start..b1_start + MLP_HIDDEN]);
 
     // hidden: 1x9
-    let hidden = (x * w1 + b1);
+    let y = x * w1 + b1;
     //let hidden_activated = hidden.map(|v| v.max(0.0)); // ReLU activation
-    let hidden_activated = hidden.map(|v| v.tanh()); // tanh activation
+    // let hidden_activated = hidden.map(|v| v.tanh()); // tanh activation
 
-    // W2: 9x2 (row-major slice)
-    let w2_start = b1_start + MLP_HIDDEN;
-    let w2: na::SMatrix<f32, MLP_HIDDEN, MLP_OUTPUTS> =
-        na::SMatrix::from_row_slice(&genome.genes[w2_start..w2_start + MLP_HIDDEN * MLP_OUTPUTS]);
+    // // W2: 9x2 (row-major slice)
+    // let w2_start = b1_start + MLP_HIDDEN;
+    // let w2: na::SMatrix<f32, MLP_HIDDEN, MLP_OUTPUTS> =
+    //     na::SMatrix::from_row_slice(&genome.genes[w2_start..w2_start + MLP_HIDDEN * MLP_OUTPUTS]);
 
-    // b2: 1x2
-    let b2_start = w2_start + MLP_HIDDEN * MLP_OUTPUTS;
-    let b2: na::RowSVector<f32, MLP_OUTPUTS> =
-        na::RowSVector::from_row_slice(&genome.genes[b2_start..b2_start + MLP_OUTPUTS]);
+    // // b2: 1x2
+    // let b2_start = w2_start + MLP_HIDDEN * MLP_OUTPUTS;
+    // let b2: na::RowSVector<f32, MLP_OUTPUTS> =
+    //     na::RowSVector::from_row_slice(&genome.genes[b2_start..b2_start + MLP_OUTPUTS]);
 
-    // y: 1x2
-    let y = hidden_activated * w2 + b2 * 0.0;
+    // // y: 1x2
+    // let y = hidden_activated * w2 + b2 * 0.0;
 
     MovementOutput {
         vector: Vec2::new(y[0], y[1]),
