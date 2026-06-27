@@ -401,6 +401,7 @@ fn think_animals(
             &animal.genome,
             animal.position,
             animal.velocity,
+            animal.energy,
             &world,
         );
 
@@ -661,9 +662,7 @@ fn handle_object_collision(
     let mut animal_gain_by_entity: HashMap<Entity, f32> = HashMap::new();
     let mut plant_taken_by_entity: HashMap<Entity, f32> = HashMap::new();
     let mut prey_taken_by_entity: HashMap<Entity, f32> = HashMap::new();
-    let mut collision_count = 0usize;
-    let mut plant_collision_count = 0usize;
-    let mut animal_collision_count = 0usize;
+
 
     if !plants_snapshot.is_empty() {
         for predator in &animals_snapshot {
@@ -695,8 +694,6 @@ fn handle_object_collision(
                     continue;
                 }
 
-                collision_count += 1;
-                plant_collision_count += 1;
                 *animal_gain_by_entity.entry(predator.entity).or_insert(0.0) +=
                     taken * metabolism_ratio;
                 *plant_taken_by_entity.entry(plant.entity).or_insert(0.0) += taken;

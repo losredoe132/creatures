@@ -92,6 +92,7 @@ fn draw_animal_movement_arrows(mut gizmos: Gizmos, animals: Query<&Animal>, plan
             &animal.genome,
             animal.position,
             animal.velocity,
+            animal.energy,
             &world,
         );
         let magnitude = movement.length();

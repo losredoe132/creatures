@@ -9,11 +9,18 @@ pub fn think_with_vision(
     genome: &Genome,
     origin: Vec2,
     forward: Vec2,
+    self_energy: f32,
     world: &crate::sense::PerceptionWorld<'_>,
 ) -> Vec2 {
     let sensed = vision.sense(origin, forward, world);
-    let features =
-        encode_perception_features(&sensed.plants, &sensed.animals, vision.range.max(1.0));
+    let features = encode_perception_features(
+        &sensed.plants,
+        &sensed.animals,
+        vision.range.max(1.0),
+        forward,
+        self_energy,
+    );
+
     mlp_movement(features, genome).vector
 }
 
@@ -21,6 +28,8 @@ fn encode_perception_features(
     perceived_plants: &[PerceivedPlant],
     perceived_animals: &[PerceivedAnimal],
     vision_range: f32,
+    self_velocity: Vec2,
+    self_energy: f32,
 ) -> [f32; MLP_INPUTS] {
     let plant_features = encode_plant_features(perceived_plants, vision_range);
 
@@ -47,6 +56,7 @@ fn encode_perception_features(
         .collect();
 
     let animal_features_omnivores = encode_animal_features(&omnivore_animals, vision_range);
+    let self_awareness_features = encode_self_awareness_features(self_velocity, self_energy);
 
     let mut features = [0.0f32; MLP_INPUTS];
     features[0] = plant_features[0];
@@ -68,7 +78,18 @@ fn encode_perception_features(
     features[16] = animal_features_omnivores[2];
     features[17] = animal_features_omnivores[3];
     features[18] = animal_features_omnivores[4];
+    features[19] = self_awareness_features[0];
+    features[20] = self_awareness_features[1];
+    features[21] = self_awareness_features[2];
     features
+}
+
+fn encode_self_awareness_features(self_velocity: Vec2, self_energy: f32) -> [f32; 3] {
+    [
+        self_velocity.x.tanh().clamp(-1.0, 1.0),
+        self_velocity.y.tanh().clamp(-1.0, 1.0),
+        (self_energy / 100.0).clamp(0.0, 1.0),
+    ]
 }
 
 fn encode_plant_features(perceived_plants: &[PerceivedPlant], vision_range: f32) -> [f32; 4] {
