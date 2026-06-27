@@ -93,6 +93,7 @@ pub struct Animal {
     pub genome: Genome,
     pub spawn_at: u64,
     pub despawn_at: Option<u64>,
+    pub family: u32,
 }
 
 impl Animal {
@@ -102,8 +103,8 @@ impl Animal {
         velocity: Vec2,
         genome: Genome,
         frame_count: &Res<GlobalFrameCounter>,
-
         config: &SimulationConfig,
+        family: u32,
     ) -> Self {
         Self {
             diet,
@@ -118,6 +119,7 @@ impl Animal {
             genome: genome,
             spawn_at: frame_count.0 as u64,
             despawn_at: None,
+            family: family,
         }
     }
 }

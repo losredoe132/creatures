@@ -147,13 +147,14 @@ fn despawn_animal(
     animal.despawn_at = Some(despawn_frame);
     let lifetime_duration = animal.despawn_at.unwrap_or_default() - animal.spawn_at;
     log.info(&format!(
-        "animal_despawn,reason={},spawn_at_frame={},despawn_at_frame={},lifetime_frames={},genome={:?},diet={:?}",
+        "animal_despawn,reason={},spawn_at_frame={},despawn_at_frame={},lifetime_frames={},genome={:?},diet={:?},family={}",
         reason,
         animal.spawn_at,
         animal.despawn_at.unwrap_or_default(),
         lifetime_duration,
         animal.genome.genes,
-        animal.diet
+        animal.diet, 
+        animal.family
     ));
     commands.entity(entity).despawn();
 }
@@ -231,6 +232,7 @@ fn setup_world(
         Genome::random(&mut rng.0),
         &frame_count,
         &config,
+        0,
     );
 
     for _ in 0..config.spawn_config.n_plants {
@@ -342,10 +344,11 @@ fn spawn_random_animal(
         Genome::random(rng),
         frame_count,
         config,
+        rng.next_u32(),
     );
     log.debug(&format!(
-        "animal_spawn source={} x={:.2} y={:.2}, diet ={:?}",
-        source, animal.position.x, animal.position.y, animal.diet
+        "animal_spawn source={} x={:.2} y={:.2}, diet ={:?},family={}",
+        source, animal.position.x, animal.position.y, animal.diet, animal.family
     ));
     commands.spawn(animal);
 }
@@ -523,6 +526,7 @@ fn reproduce_animals(
                 parent.genome.mutated(&mut rng.0, mutation_strength),
                 &frame_count,
                 &config,
+                parent.family,
             ));
         }
 
