@@ -10,7 +10,7 @@ use crate::brain::think_with_vision;
 use crate::config::{SimulationConfig, WorldBounds};
 use crate::creature::{Animal, Carcass, Diet, EnergyPosition, Movable, Plant};
 use crate::logging::{ConsoleBackend, SimulationLogger, TextFileBackend};
-use crate::mlp::Genome;
+use crate::mlp::{GENOME_LEN, Genome, MLP_INPUTS, MLP_OUTPUTS};
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
 use crate::utils::size_from_energy;
 use crate::zoo::{Zoo, ZooAnimal};
@@ -252,6 +252,60 @@ fn initialize_simulation_log(mut commands: Commands) {
     commands.insert_resource(zoo);
 }
 
+fn get_optimal_herbivore_genome() -> Vec<f32> {
+    let mut genome = vec![0.0; GENOME_LEN];
+    genome[0] = 4.0;
+    genome[MLP_OUTPUTS + 1] = 4.0;
+
+    // Run from carnivores
+    genome[4 * 2] = -5.0; // genome[8]
+    genome[5 * 2 + 1] = -5.0; // genome[11]
+
+    // Run from omnivores
+    genome[14 * 2] = -4.0; // genome[28]
+    genome[15 * 2 + 1] = -5.0; // genome[31]
+
+    genome
+}
+
+fn get_optimal_carnivore_genome() -> Vec<f32> {
+    let mut genome = vec![0.0; GENOME_LEN];
+
+    // Run from carnivores
+    genome[4 * 2] = -1.0; // genome[8]
+    genome[5 * 2 + 1] = -1.0; // genome[11]
+
+    // Run to herbivores
+    genome[9 * 2] = 4.0; // genome[18]
+    genome[10 * 2 + 1] = 4.0; // genome[21]
+
+    // Run from omnivores
+    genome[14 * 2] = -4.0; // genome[28]
+    genome[15 * 2 + 1] = -4.0; // genome[31]
+
+    genome
+}
+
+fn get_optimal_omnivore_genome() -> Vec<f32> {
+    let mut genome = vec![0.0; GENOME_LEN];
+    genome[0] = 4.0;
+    genome[MLP_OUTPUTS + 1] = 4.0;
+
+    // Run from carnivores
+    genome[4 * 2] = -4.0; // genome[8]
+    genome[5 * 2 + 1] = -4.0; // genome[11]
+
+    // Run to herbivores
+    genome[9 * 2] = 4.0; // genome[18]
+    genome[10 * 2 + 1] = 4.0; // genome[21]
+
+    // Run from omnivores
+    genome[14 * 2] = 4.0; // genome[28]
+    genome[15 * 2 + 1] = 4.0; // genome[31]
+
+    genome
+}
+
 fn setup_world(
     mut commands: Commands,
     frame_count: Res<GlobalFrameCounter>,
@@ -259,23 +313,57 @@ fn setup_world(
     config: Res<SimulationConfig>,
     mut rng: ResMut<SimulationRng>,
 ) {
-    let animal = Animal::new(
+    let animal_herbivor = Animal::new(
         rng.0.next_u64(),
         None,
-        Diet::random(&mut rng.0),
+        Diet::Herbivore,
+        Vec2::new(100.0, 100.0),
         Vec2::new(0.0, 0.0),
-        Vec2::new(0.0, 0.0),
-        Genome::random(&mut rng.0),
+        Genome {
+            genes: get_optimal_herbivore_genome(),
+        },
         &frame_count,
         &config,
         0,
     );
 
+    commands.spawn(animal_herbivor);
+
+    let animal_carnivor = Animal::new(
+        rng.0.next_u64(),
+        None,
+        Diet::Carnivore,
+        Vec2::new(0.0, 0.0),
+        Vec2::new(0.0, 0.0),
+        Genome {
+            genes: get_optimal_carnivore_genome(),
+        },
+        &frame_count,
+        &config,
+        1,
+    );
+
+    commands.spawn(animal_carnivor);
+
+    let animal_omnivor = Animal::new(
+        rng.0.next_u64(),
+        None,
+        Diet::Omnivore,
+        Vec2::new(-100.0, 100.0),
+        Vec2::new(0.0, 0.0),
+        Genome {
+            genes: get_optimal_omnivore_genome(),
+        },
+        &frame_count,
+        &config,
+        2,
+    );
+
+    commands.spawn(animal_omnivor);
+
     for _ in 0..config.spawn_config.n_plants {
         spawn_random_plant(&mut commands, &config, &mut rng.0, "startup", &mut *log);
     }
-
-    commands.spawn(animal);
 }
 
 fn random_spawn_plants(
@@ -360,7 +448,9 @@ fn spawn_random_plant(
     source: &str,
     log: &mut SimulationLogger,
 ) {
-    let energy = rng.gen_range(5.0..=config.tuning.plant_max_energy/10.0).max(5.0);
+    let energy = rng
+        .gen_range(5.0..=config.tuning.plant_max_energy / 10.0)
+        .max(5.0);
     let plant = Plant {
         position: Vec2::new(
             rng.gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),
@@ -393,7 +483,9 @@ fn spawn_plant_nearby(
     .extend(0.0);
     ensure_torodial_world(&mut spawn_translation, &config.world_bounds);
 
-    let energy = rng.gen_range(5.0..=config.tuning.plant_max_energy/10.0).max(5.0);
+    let energy = rng
+        .gen_range(5.0..=config.tuning.plant_max_energy / 10.0)
+        .max(5.0);
     let plant = Plant {
         position: spawn_translation.xy(),
         energy,
