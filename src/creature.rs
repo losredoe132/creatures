@@ -90,6 +90,7 @@ pub struct Animal {
     pub position: Vec2,
     pub velocity: Vec2,
     pub energy: f32,
+    pub initial_energy: f32,
     pub size: f32,
     pub color: Color,
     pub vision: Vision,
@@ -97,6 +98,13 @@ pub struct Animal {
     pub spawn_at: u64,
     pub despawn_at: Option<u64>,
     pub family: u32,
+}
+
+#[derive(Component)]
+pub struct Carcass {
+    pub position: Vec2,
+    pub energy: f32,
+    pub size: f32,
 }
 
 impl Animal {
@@ -118,6 +126,7 @@ impl Animal {
             position,
             velocity,
             energy: config.spawn_config.animal_spawn_energy,
+            initial_energy: config.spawn_config.animal_spawn_energy,
             size: size_from_energy(config.spawn_config.animal_spawn_energy, &config),
             color: diet.color(),
             vision: Vision {

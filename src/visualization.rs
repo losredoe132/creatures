@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::brain::think_with_vision;
 use crate::config::SimulationConfig;
-use crate::creature::{Animal, Plant};
+use crate::creature::{Animal, Carcass, Plant};
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
 use crate::simulation::{GlobalFrameCounter, PopulationSizeTracker};
 pub struct VisualizationPlugin;
@@ -16,6 +16,7 @@ impl Plugin for VisualizationPlugin {
             .add_systems(Update, draw_animal_movement_arrows)
             .add_systems(Update, attach_animal_visuals)
             .add_systems(Update, attach_plant_visuals)
+            .add_systems(Update, attach_carcass_visuals)
             .add_systems(Update, update_animal_visual_sizes)
             .add_systems(Update, update_plant_visual_sizes);
     }
@@ -195,5 +196,21 @@ fn attach_plant_visuals(
 fn update_plant_visual_sizes(mut query: Query<(&Plant, &mut Transform), Changed<Plant>>) {
     for (plant, mut transform) in &mut query {
         transform.scale = Vec3::splat(plant.size);
+    }
+}
+
+fn attach_carcass_visuals(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    query: Query<(Entity, &Carcass), Added<Carcass>>,
+) {
+    for (entity, carcass) in &query {
+        commands.entity(entity).insert((
+            Mesh2d(meshes.add(Circle::new(1.0))),
+            MeshMaterial2d(materials.add(Color::srgba(0.45, 0.3, 0.15, 0.8))),
+            Transform::from_translation(carcass.position.extend(-0.1))
+                .with_scale(Vec3::splat(carcass.size)),
+        ));
     }
 }

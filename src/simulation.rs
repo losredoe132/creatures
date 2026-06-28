@@ -8,7 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::brain::think_with_vision;
 use crate::config::{SimulationConfig, WorldBounds};
-use crate::creature::{Animal, Diet, EnergyPosition, Movable, Plant};
+use crate::creature::{Animal, Carcass, Diet, EnergyPosition, Movable, Plant};
 use crate::logging::{ConsoleBackend, SimulationLogger, TextFileBackend};
 use crate::mlp::Genome;
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
@@ -155,6 +155,7 @@ fn despawn_animal(
     animal: &mut Animal,
     reason: &str,
     despawn_frame: u64,
+    config: &SimulationConfig,
 ) {
     animal.despawn_at = Some(despawn_frame);
     let lifetime_duration = animal.despawn_at.unwrap_or_default() - animal.spawn_at;
@@ -171,6 +172,14 @@ fn despawn_animal(
         "animal_despawn reason={} lifetime_frames={} animal={:?}",
         reason, lifetime_duration, animal
     ));
+
+    let carcass_energy = animal.initial_energy * 0.5;
+    commands.spawn(Carcass {
+        position: animal.position,
+        energy: carcass_energy,
+        size: size_from_energy(carcass_energy, config),
+    });
+
     commands.entity(entity).despawn();
 }
 
@@ -178,6 +187,7 @@ fn despawn_animals_on_shutdown(
     mut exit_events: MessageReader<AppExit>,
     mut commands: Commands,
     frame_count: Res<GlobalFrameCounter>,
+    config: Res<SimulationConfig>,
     mut animals: Query<(Entity, &mut Animal)>,
     mut log: ResMut<SimulationLogger>,
     mut zoo: ResMut<Zoo>,
@@ -196,6 +206,7 @@ fn despawn_animals_on_shutdown(
             &mut animal,
             "shutdown",
             frame_count.0,
+            &config,
         );
         despawn_count += 1;
     }
@@ -668,6 +679,7 @@ fn reproduce_animals(
 fn despawn_starved_animals(
     mut commands: Commands,
     frame_count: Res<GlobalFrameCounter>,
+    config: Res<SimulationConfig>,
     mut animals: Query<(Entity, &mut Animal)>,
     mut log: ResMut<SimulationLogger>,
     mut zoo: ResMut<Zoo>,
@@ -683,6 +695,7 @@ fn despawn_starved_animals(
                 &mut animal,
                 "starvation",
                 frame_count.0,
+                &config,
             );
             despawn_count += 1;
         }
@@ -943,6 +956,7 @@ fn handle_object_collision(
                     &mut prey,
                     "collision",
                     frame_count.0,
+                    &config,
                 );
             }
         }
