@@ -51,13 +51,14 @@ fn update_time_display(
 ) {
     for mut text in &mut query {
         **text = format!(
-            "Frame: {}\nPlants: {}\nAnimals: {} (H:{} O:{} C:{})\nFamilies: {}",
+            "Frame: {}\nPlants: {}\nAnimals: {} (H:{} O:{} C:{} S:{})\nFamilies: {}",
             frame_count.0,
             tracker.plants,
-            tracker.animals.herbivores + tracker.animals.omnivores + tracker.animals.carnivores,
+            tracker.animals.herbivores + tracker.animals.omnivores + tracker.animals.carnivores + tracker.animals.scavengers,
             tracker.animals.herbivores,
             tracker.animals.omnivores,
             tracker.animals.carnivores,
+            tracker.animals.scavengers,
             tracker.families.len()
         );
     }

@@ -24,14 +24,16 @@ pub enum Diet {
     Herbivore,
     Omnivore,
     Carnivore,
+    Scavenger,
 }
 
 impl Diet {
     pub fn random(rng: &mut impl Rng) -> Self {
-        match rng.gen_range(0..3) {
+        match rng.gen_range(0..4) {
             0 => Self::Herbivore,
             1 => Self::Omnivore,
-            _ => Self::Carnivore,
+            2 => Self::Carnivore,
+            _ => Self::Scavenger,
         }
     }
 
@@ -43,11 +45,16 @@ impl Diet {
         matches!(self, Self::Omnivore | Self::Carnivore)
     }
 
+    pub fn can_eat_carcasses(self) -> bool {
+        matches!(self, Self::Scavenger | Self::Omnivore)
+    }
+
     pub fn metabolism_ratio(self, config: &SimulationConfig) -> f32 {
         match self {
             Self::Herbivore => config.tuning.herbivore_metabolism_ratio.max(0.0),
             Self::Omnivore => config.tuning.omnivore_metabolism_ratio.max(0.0),
             Self::Carnivore => config.tuning.carnivore_metabolism_ratio.max(0.0),
+            Self::Scavenger => config.tuning.scavenger_metabolism_ratio.max(0.0),
         }
     }
 
@@ -56,6 +63,7 @@ impl Diet {
             Self::Herbivore => Color::srgb(0.0, 0.8, 0.0),
             Self::Omnivore => Color::srgb(0.5, 0.5, 0.0),
             Self::Carnivore => Color::srgb(1.0, 0.0, 0.0),
+            Self::Scavenger => Color::srgb(0.6, 0.4, 0.1),
         }
     }
 }

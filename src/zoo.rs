@@ -20,22 +20,26 @@ fn retain_top_per_diet(entries: &mut Vec<ZooAnimal>) {
     let mut herbivores = Vec::new();
     let mut omnivores = Vec::new();
     let mut carnivores = Vec::new();
+    let mut scavengers = Vec::new();
 
     for entry in std::mem::take(entries) {
         match entry.diet {
             Diet::Herbivore => herbivores.push(entry),
             Diet::Omnivore => omnivores.push(entry),
             Diet::Carnivore => carnivores.push(entry),
+            Diet::Scavenger => scavengers.push(entry),
         }
     }
 
     sort_and_truncate_by_lifetime(&mut herbivores);
     sort_and_truncate_by_lifetime(&mut omnivores);
     sort_and_truncate_by_lifetime(&mut carnivores);
+    sort_and_truncate_by_lifetime(&mut scavengers);
 
     entries.extend(herbivores);
     entries.extend(omnivores);
     entries.extend(carnivores);
+    entries.extend(scavengers);
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

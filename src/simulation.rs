@@ -37,6 +37,7 @@ pub struct AnimalPopulation {
     pub carnivores: usize,
     pub herbivores: usize,
     pub omnivores: usize,
+    pub scavengers: usize,
 }
 
 #[derive(Resource, Default)]
@@ -103,6 +104,7 @@ fn log_population_size_changes(
             Diet::Carnivore => population.carnivores += 1,
             Diet::Herbivore => population.herbivores += 1,
             Diet::Omnivore => population.omnivores += 1,
+            Diet::Scavenger => population.scavengers += 1,
         }
         *family_counts.entry(animal.family).or_insert(0) += 1;
     }
@@ -130,11 +132,12 @@ fn log_population_size_changes(
         };
 
         log.info(&format!(
-            "population_size plants={} animals={{carnivores:{} herbivores:{} omnivores:{}}} families={}",
+            "population_size plants={} animals={{carnivores:{} herbivores:{} omnivores:{} scavengers:{}}} families={}",
             plant_count,
             population.carnivores,
             population.herbivores,
             population.omnivores,
+            population.scavengers,
             family_report
         ));
         tracker.plants = plant_count;
@@ -734,6 +737,8 @@ fn handle_object_collision(
         Query<&mut Animal>,
         Query<(Entity, &Plant)>,
         Query<&mut Plant>,
+        Query<(Entity, &Carcass)>,
+        Query<&mut Carcass>,
     )>,
 ) {
     #[derive(Clone, Copy)]
@@ -779,6 +784,25 @@ fn handle_object_collision(
         })
         .collect::<Vec<_>>();
 
+    #[derive(Clone, Copy)]
+    struct CarcassFoodSnapshot {
+        entity: Entity,
+        position: Vec2,
+        radius: f32,
+        energy: f32,
+    }
+
+    let carcasses_snapshot = entities
+        .p4()
+        .iter()
+        .map(|(entity, carcass)| CarcassFoodSnapshot {
+            entity,
+            position: carcass.position,
+            radius: carcass.size,
+            energy: carcass.energy,
+        })
+        .collect::<Vec<_>>();
+
     if animals_snapshot.is_empty() {
         return;
     }
@@ -792,6 +816,7 @@ fn handle_object_collision(
     let mut animal_gain_by_entity: HashMap<Entity, f32> = HashMap::new();
     let mut plant_taken_by_entity: HashMap<Entity, f32> = HashMap::new();
     let mut prey_taken_by_entity: HashMap<Entity, f32> = HashMap::new();
+    let mut carcass_taken_by_entity: HashMap<Entity, f32> = HashMap::new();
 
     if !plants_snapshot.is_empty() {
         for predator in &animals_snapshot {
@@ -830,6 +855,43 @@ fn handle_object_collision(
         }
     }
 
+    if !carcasses_snapshot.is_empty() {
+        for scavenger in &animals_snapshot {
+            if !scavenger.diet.can_eat_carcasses() {
+                continue;
+            }
+
+            let metabolism_ratio = scavenger.diet.metabolism_ratio(&config);
+
+            for carcass in &carcasses_snapshot {
+                let combined_radius = scavenger.radius + carcass.radius;
+                let overlaps = scavenger.position.distance_squared(carcass.position)
+                    <= combined_radius * combined_radius;
+                if !overlaps {
+                    continue;
+                }
+
+                let already_taken = carcass_taken_by_entity
+                    .get(&carcass.entity)
+                    .copied()
+                    .unwrap_or(0.0);
+                let remaining_energy = (carcass.energy - already_taken).max(0.0);
+                if remaining_energy <= 0.0 {
+                    continue;
+                }
+
+                let taken = consume_per_collision.min(remaining_energy);
+                if taken <= 0.0 {
+                    continue;
+                }
+
+                *animal_gain_by_entity.entry(scavenger.entity).or_insert(0.0) +=
+                    taken * metabolism_ratio;
+                *carcass_taken_by_entity.entry(carcass.entity).or_insert(0.0) += taken;
+            }
+        }
+    }
+
     for predator in &animals_snapshot {
         if !predator.diet.can_eat_animals() {
             continue;
@@ -851,17 +913,17 @@ fn handle_object_collision(
             // }
 
             let can_predate = match predator.diet {
-                Diet::Herbivore => false,
+                Diet::Herbivore | Diet::Scavenger => false,
                 Diet::Omnivore => {
                     matches!(
                         prey.diet,
-                        Diet::Herbivore | Diet::Omnivore | Diet::Carnivore
+                        Diet::Herbivore | Diet::Omnivore | Diet::Carnivore | Diet::Scavenger
                     )
                 }
                 Diet::Carnivore => {
                     matches!(
                         prey.diet,
-                        Diet::Herbivore | Diet::Omnivore | Diet::Carnivore
+                        Diet::Herbivore | Diet::Omnivore | Diet::Carnivore | Diet::Scavenger
                     )
                 }
             };
@@ -872,17 +934,17 @@ fn handle_object_collision(
             // If both animals can predate each other, choose a single winner for this
             // frame so they do not both consume and immediately cancel out.
             let prey_can_counter_predate = match prey.diet {
-                Diet::Herbivore => false,
+                Diet::Herbivore | Diet::Scavenger => false,
                 Diet::Omnivore => {
                     matches!(
                         predator.diet,
-                        Diet::Herbivore | Diet::Omnivore | Diet::Carnivore
+                        Diet::Herbivore | Diet::Omnivore | Diet::Carnivore | Diet::Scavenger
                     )
                 }
                 Diet::Carnivore => {
                     matches!(
                         predator.diet,
-                        Diet::Herbivore | Diet::Omnivore | Diet::Carnivore
+                        Diet::Herbivore | Diet::Omnivore | Diet::Carnivore | Diet::Scavenger
                     )
                 }
             };
@@ -958,6 +1020,16 @@ fn handle_object_collision(
                     frame_count.0,
                     &config,
                 );
+            }
+        }
+    }
+
+    for (carcass_entity, taken_energy) in &carcass_taken_by_entity {
+        if let Ok(mut carcass) = entities.p5().get_mut(*carcass_entity) {
+            carcass.energy = (carcass.energy - *taken_energy).max(0.0);
+            carcass.size = size_from_energy(carcass.energy, &config);
+            if carcass.energy <= 0.0 {
+                commands.entity(*carcass_entity).despawn();
             }
         }
     }
