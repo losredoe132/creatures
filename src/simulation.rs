@@ -363,6 +363,36 @@ fn spawn_random_plant(
     commands.spawn(plant);
 }
 
+fn spawn_plant_nearby(
+    commands: &mut Commands,
+    config: &SimulationConfig,
+    rng: &mut impl Rng,
+    parent_position: Vec2,
+    log: &mut SimulationLogger,
+) {
+    let spawn_radius = (config.tuning.plant_base_size * 3.0).max(2.0);
+    let mut spawn_translation = (parent_position
+        + Vec2::new(
+            rng.gen_range(-spawn_radius..spawn_radius),
+            rng.gen_range(-spawn_radius..spawn_radius),
+        ))
+    .extend(0.0);
+    ensure_torodial_world(&mut spawn_translation, &config.world_bounds);
+
+    let energy = 10.0;
+    let plant = Plant {
+        position: spawn_translation.xy(),
+        energy,
+        size: size_from_energy(energy, config),
+        color: Color::srgb(0.3, 0.6, 0.2),
+    };
+    log.debug(&format!(
+        "plant_spawn source=growth x={:.2} y={:.2}",
+        plant.position.x, plant.position.y
+    ));
+    commands.spawn(plant);
+}
+
 fn spawn_random_animal(
     commands: &mut Commands,
     config: &SimulationConfig,
@@ -531,15 +561,38 @@ fn move_animals(
     }
 }
 
-fn grow_plants(mut plants: Query<&mut Plant>, time: Res<Time>, config: Res<SimulationConfig>) {
+fn grow_plants(
+    mut commands: Commands,
+    mut plants: Query<&mut Plant>,
+    time: Res<Time>,
+    config: Res<SimulationConfig>,
+    mut rng: ResMut<SimulationRng>,
+    mut log: ResMut<SimulationLogger>,
+) {
     let growth = config.tuning.plant_growth_per_sec * time.delta_secs();
     if growth <= 0.0 {
         return;
     }
 
+    let mut spawn_positions = Vec::new();
     for mut plant in &mut plants {
+        let was_below_max = plant.energy < config.tuning.plant_max_energy;
         plant.energy = (plant.energy + growth).min(config.tuning.plant_max_energy);
         plant.size = size_from_energy(plant.energy, &config);
+
+        if was_below_max && plant.energy >= config.tuning.plant_max_energy {
+            spawn_positions.push(plant.position);
+        }
+    }
+
+    for parent_position in spawn_positions {
+        spawn_plant_nearby(
+            &mut commands,
+            &config,
+            &mut rng.0,
+            parent_position,
+            &mut *log,
+        );
     }
 }
 
