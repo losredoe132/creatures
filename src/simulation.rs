@@ -657,7 +657,7 @@ fn reproduce_animals(
     }
 
     if reproduction_count > 0 {
-        log.info(&format!(
+        log.debug(&format!(
             "animal_reproduction parents={} offspring={}",
             reproduction_count,
             reproduction_count * 2
