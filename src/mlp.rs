@@ -1,6 +1,7 @@
 use bevy::prelude::Vec2;
 use nalgebra as na;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
 pub const MLP_INPUTS: usize = 25;
 pub const MLP_HIDDEN_1: usize = 12;
@@ -14,7 +15,7 @@ pub const GENOME_LEN: usize = MLP_INPUTS * MLP_HIDDEN_1
     + MLP_HIDDEN_2 * MLP_OUTPUTS
     + MLP_OUTPUTS;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Genome {
     pub genes: Vec<f32>,
 }

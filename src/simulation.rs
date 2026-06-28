@@ -13,6 +13,7 @@ use crate::logging::{ConsoleBackend, SimulationLogger, TextFileBackend};
 use crate::mlp::Genome;
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
 use crate::utils::size_from_energy;
+use crate::zoo::{Zoo, ZooAnimal};
 
 pub struct SimulationPlugin;
 
@@ -149,6 +150,7 @@ fn advance_global_frame_counter(mut frame_counter: ResMut<GlobalFrameCounter>) {
 fn despawn_animal(
     commands: &mut Commands,
     log: &mut SimulationLogger,
+    zoo: &mut Zoo,
     entity: Entity,
     animal: &mut Animal,
     reason: &str,
@@ -156,6 +158,15 @@ fn despawn_animal(
 ) {
     animal.despawn_at = Some(despawn_frame);
     let lifetime_duration = animal.despawn_at.unwrap_or_default() - animal.spawn_at;
+    zoo.consider_and_persist(
+        ZooAnimal {
+            lifetime_frames: lifetime_duration,
+            diet: animal.diet,
+            genome: animal.genome.clone(),
+            family: animal.family,
+        },
+        log,
+    );
     log.info(&format!(
         "animal_despawn reason={} lifetime_frames={} animal={:?}",
         reason, lifetime_duration, animal
@@ -169,6 +180,7 @@ fn despawn_animals_on_shutdown(
     frame_count: Res<GlobalFrameCounter>,
     mut animals: Query<(Entity, &mut Animal)>,
     mut log: ResMut<SimulationLogger>,
+    mut zoo: ResMut<Zoo>,
 ) {
     if exit_events.read().next().is_none() {
         return;
@@ -179,6 +191,7 @@ fn despawn_animals_on_shutdown(
         despawn_animal(
             &mut commands,
             &mut log,
+            &mut zoo,
             entity,
             &mut animal,
             "shutdown",
@@ -218,8 +231,11 @@ fn initialize_simulation_log(mut commands: Commands) {
         start_timestamp_secs, seed
     ));
 
+    let zoo = Zoo::load_default(&mut logger);
+
     commands.insert_resource(logger);
     commands.insert_resource(SimulationRng(StdRng::seed_from_u64(seed)));
+    commands.insert_resource(zoo);
 }
 
 fn setup_world(
@@ -283,6 +299,7 @@ fn random_spawn_animals(
     mut log: ResMut<SimulationLogger>,
     mut spawn_clock: ResMut<AnimalSpawnClock>,
     mut rng: ResMut<SimulationRng>,
+    mut zoo: ResMut<Zoo>,
 ) {
     if animals.iter().next().is_none() {
         spawn_random_animal(
@@ -292,6 +309,7 @@ fn random_spawn_animals(
             "population_recovery",
             &frame_count,
             &mut *log,
+            &mut zoo,
         );
     }
 
@@ -315,6 +333,7 @@ fn random_spawn_animals(
             "random",
             &frame_count,
             &mut *log,
+            &mut zoo,
         );
         spawn_clock.time_until_next += sample_spawn_delay(rate, &mut rng.0);
     }
@@ -351,24 +370,37 @@ fn spawn_random_animal(
     source: &str,
     frame_count: &Res<GlobalFrameCounter>,
     log: &mut SimulationLogger,
+    zoo: &mut Zoo,
 ) {
+    let sampled = zoo.maybe_sample(rng, config.tuning.zoo_spawn_probability);
+    let (diet, genome, family, spawn_source) = if let Some(top) = sampled {
+        (top.diet, top.genome.clone(), top.family, "zoo")
+    } else {
+        (
+            Diet::random(rng),
+            Genome::random(rng),
+            rng.next_u32(),
+            source,
+        )
+    };
+
     let animal = Animal::new(
         rng.next_u64(),
         None,
-        Diet::random(rng),
+        diet,
         Vec2::new(
             rng.gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),
             rng.gen_range(-config.world_bounds.half_height..config.world_bounds.half_height),
         ),
         Vec2::new(rng.gen_range(0.0..100.0), rng.gen_range(0.0..100.0)),
-        Genome::random(rng),
+        genome,
         frame_count,
         config,
-        rng.next_u32(),
+        family,
     );
     log.debug(&format!(
         "animal_spawn source={} x={:.2} y={:.2}, diet ={:?},family={}",
-        source, animal.position.x, animal.position.y, animal.diet, animal.family
+        spawn_source, animal.position.x, animal.position.y, animal.diet, animal.family
     ));
     commands.spawn(animal);
 }
@@ -572,6 +604,7 @@ fn despawn_starved_animals(
     frame_count: Res<GlobalFrameCounter>,
     mut animals: Query<(Entity, &mut Animal)>,
     mut log: ResMut<SimulationLogger>,
+    mut zoo: ResMut<Zoo>,
 ) {
     let mut despawn_count = 0usize;
     for (entity, mut animal) in &mut animals {
@@ -579,6 +612,7 @@ fn despawn_starved_animals(
             despawn_animal(
                 &mut commands,
                 &mut log,
+                &mut zoo,
                 entity,
                 &mut animal,
                 "starvation",
@@ -615,6 +649,7 @@ fn handle_object_collision(
     config: Res<SimulationConfig>,
     mut log: ResMut<SimulationLogger>,
     frame_count: Res<GlobalFrameCounter>,
+    mut zoo: ResMut<Zoo>,
     mut entities: ParamSet<(
         Query<(Entity, &Animal)>,
         Query<&mut Animal>,
@@ -837,6 +872,7 @@ fn handle_object_collision(
                 despawn_animal(
                     &mut commands,
                     &mut *log,
+                    &mut zoo,
                     *prey_entity,
                     &mut prey,
                     "collision",

@@ -23,6 +23,7 @@ pub struct TuningConfig {
     pub plant_max_energy: f32,
     pub plant_spawn_rate_per_sec: f32,
     pub animal_spawn_rate_per_sec: f32,
+    pub zoo_spawn_probability: f32,
     pub plant_base_size: f32,
     pub plant_size_per_sqrt_energy: f32,
     pub animal_base_energy_drain_per_sec: f32,
@@ -72,6 +73,7 @@ impl TuningConfig {
             plant_max_energy: read_env_f32("PLANT_MAX_ENERGY", 120.0),
             plant_spawn_rate_per_sec: read_env_f32("PLANT_SPAWN_RATE_PER_SEC", 0.1),
             animal_spawn_rate_per_sec: read_env_f32("ANIMAL_SPAWN_RATE_PER_SEC", 0.02),
+            zoo_spawn_probability: read_env_f32("ZOO_SPAWN_PROBABILITY", 0.15),
             plant_base_size: read_env_f32("PLANT_BASE_SIZE", 4.0),
             plant_size_per_sqrt_energy: read_env_f32("PLANT_SIZE_PER_SQRT_ENERGY", 1.3),
             animal_base_energy_drain_per_sec: read_env_f32(

@@ -7,6 +7,7 @@ mod simulation;
 mod sense;
 mod utils;
 mod visualization;
+mod zoo;
 
 use bevy::prelude::*;
 use config::SimulationConfig;

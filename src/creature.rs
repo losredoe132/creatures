@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
 use crate::config::SimulationConfig;
 use crate::mlp::Genome;
@@ -18,7 +19,7 @@ pub trait Movable: EnergyPosition {
     fn set_velocity(&mut self, velocity: Vec2);
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Diet {
     Herbivore,
     Omnivore,
