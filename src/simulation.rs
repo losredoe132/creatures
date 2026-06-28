@@ -346,7 +346,7 @@ fn spawn_random_plant(
     source: &str,
     log: &mut SimulationLogger,
 ) {
-    let energy = rng.gen_range(5.0..=config.tuning.plant_max_energy);
+    let energy = rng.gen_range(5.0..=config.tuning.plant_max_energy/10.0).max(5.0);
     let plant = Plant {
         position: Vec2::new(
             rng.gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),

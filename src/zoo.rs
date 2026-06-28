@@ -11,6 +11,33 @@ use crate::mlp::Genome;
 const ZOO_CAPACITY: usize = 10;
 const DEFAULT_ZOO_PATH: &str = "logs/zoo.json";
 
+fn sort_and_truncate_by_lifetime(entries: &mut Vec<ZooAnimal>) {
+    entries.sort_by(|left, right| right.lifetime_frames.cmp(&left.lifetime_frames));
+    entries.truncate(ZOO_CAPACITY);
+}
+
+fn retain_top_per_diet(entries: &mut Vec<ZooAnimal>) {
+    let mut herbivores = Vec::new();
+    let mut omnivores = Vec::new();
+    let mut carnivores = Vec::new();
+
+    for entry in std::mem::take(entries) {
+        match entry.diet {
+            Diet::Herbivore => herbivores.push(entry),
+            Diet::Omnivore => omnivores.push(entry),
+            Diet::Carnivore => carnivores.push(entry),
+        }
+    }
+
+    sort_and_truncate_by_lifetime(&mut herbivores);
+    sort_and_truncate_by_lifetime(&mut omnivores);
+    sort_and_truncate_by_lifetime(&mut carnivores);
+
+    entries.extend(herbivores);
+    entries.extend(omnivores);
+    entries.extend(carnivores);
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ZooAnimal {
     pub lifetime_frames: u64,
@@ -37,8 +64,7 @@ impl Zoo {
         let entries = match fs::read_to_string(&file_path) {
             Ok(raw) => match serde_json::from_str::<Vec<ZooAnimal>>(&raw) {
                 Ok(mut parsed) => {
-                    parsed.sort_by(|left, right| right.lifetime_frames.cmp(&left.lifetime_frames));
-                    parsed.truncate(ZOO_CAPACITY);
+                    retain_top_per_diet(&mut parsed);
                     log.info(&format!(
                         "zoo_load_completed path={} entries={}",
                         file_path.display(),
@@ -95,9 +121,7 @@ impl Zoo {
 
     pub fn consider_and_persist(&mut self, candidate: ZooAnimal, log: &mut SimulationLogger) {
         self.entries.push(candidate);
-        self.entries
-            .sort_by(|left, right| right.lifetime_frames.cmp(&left.lifetime_frames));
-        self.entries.truncate(ZOO_CAPACITY);
+        retain_top_per_diet(&mut self.entries);
         if let Err(err) = self.persist() {
             log.warn(&format!(
                 "zoo_save_failed path={} error={}",
