@@ -456,6 +456,24 @@ fn think_animals(
     }
 }
 
+fn calculate_energy_drain(animal: &Animal, config: &SimulationConfig, delta_secs: f32) -> f32 {
+    let speed_ratio = (animal.velocity().length() / config.tuning.animal_speed_reference).max(0.0);
+    let speed_drain = config.tuning.animal_speed_energy_drain_per_sec
+        * ((config.tuning.animal_speed_exponent * speed_ratio).exp() - 1.0);
+    let brain_drain = calculate_brain_drain(&animal.genome, config);
+    (config.tuning.animal_base_energy_drain_per_sec + speed_drain + brain_drain) * delta_secs
+}
+
+fn calculate_brain_drain(genome: &Genome, config: &SimulationConfig) -> f32 {
+    let gene_count = genome.genes.len();
+    if gene_count == 0 {
+        return 0.0;
+    }
+
+    let mean_abs_gene = genome.genes.iter().map(|gene| gene.abs()).sum::<f32>() / gene_count as f32;
+    mean_abs_gene * config.tuning.animal_brain_energy_drain_factor.max(0.0)
+}
+
 fn move_animals(
     mut query: Query<(&mut Animal, &mut Transform)>,
     time: Res<Time>,
@@ -502,12 +520,7 @@ fn move_animals(
 
         animal.set_position(transform.translation.xy());
 
-        let speed_ratio =
-            (animal.velocity().length() / config.tuning.animal_speed_reference).max(0.0);
-        let speed_drain = config.tuning.animal_speed_energy_drain_per_sec
-            * ((config.tuning.animal_speed_exponent * speed_ratio).exp() - 1.0);
-        let energy_drain =
-            (config.tuning.animal_base_energy_drain_per_sec + speed_drain) * time.delta_secs();
+        let energy_drain = calculate_energy_drain(&animal, &config, time.delta_secs());
         let updated_energy = (animal.energy() - energy_drain).max(0.0);
         animal.set_energy(updated_energy);
         if !animal.energy.is_finite() {

@@ -30,6 +30,7 @@ pub struct TuningConfig {
     pub animal_speed_energy_drain_per_sec: f32,
     pub animal_speed_exponent: f32,
     pub animal_speed_reference: f32,
+    pub animal_brain_energy_drain_factor: f32,
     pub animal_inertia: f32,
     pub animal_max_speed: f32,
     pub vision_range: f32,
@@ -86,6 +87,10 @@ impl TuningConfig {
             ),
             animal_speed_exponent: read_env_f32("ANIMAL_SPEED_EXPONENT", 0.9),
             animal_speed_reference: read_env_f32("ANIMAL_SPEED_REFERENCE", 220.0),
+            animal_brain_energy_drain_factor: read_env_f32(
+                "ANIMAL_BRAIN_ENERGY_DRAIN_FACTOR",
+                0.01,
+            ),
             animal_inertia: read_env_f32("ANIMAL_INERTIA", 0.8),
             animal_max_speed: read_env_f32("ANIMAL_MAX_SPEED", 220.0),
             vision_range: read_env_f32("VISION_RANGE", 200.0),
