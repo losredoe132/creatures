@@ -1,10 +1,11 @@
 use crate::config::SimulationConfig;
 use bevy::prelude::Vec2;
 
+#[allow(dead_code)]
 pub fn sigmoid(x: f32) -> f32 {
     1.0 / (1.0 + (-x).exp())
 }
-
+#[allow(dead_code)]
 pub fn limit_speed_sigmoid(velocity: Vec2, max_speed: f32, steepness: f32) -> Vec2 {
     if max_speed <= 0.0 {
         return Vec2::ZERO;

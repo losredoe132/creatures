@@ -33,7 +33,6 @@ pub struct TuningConfig {
     pub animal_max_speed: f32,
     pub vision_range: f32,
     pub reproduction_energy_multiplier: f32,
-    pub offspring_energy_jitter: f32,
     pub genome_mutation_strength: f32,
     pub reproduction_position_jitter: f32,
 }
@@ -89,7 +88,6 @@ impl TuningConfig {
             animal_max_speed: read_env_f32("ANIMAL_MAX_SPEED", 220.0),
             vision_range: read_env_f32("VISION_RANGE", 200.0),
             reproduction_energy_multiplier: read_env_f32("REPRODUCTION_ENERGY_MULTIPLIER", 8.0),
-            offspring_energy_jitter: read_env_f32("OFFSPRING_ENERGY_JITTER", 0.1),
             genome_mutation_strength: read_env_f32("GENOME_MUTATION_STRENGTH", 0.05),
             reproduction_position_jitter: read_env_f32("REPRODUCTION_POSITION_JITTER", 18.0),
         }

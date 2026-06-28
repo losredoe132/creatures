@@ -678,9 +678,7 @@ fn handle_object_collision(
     }
 
     let consume_per_collision = config.tuning.plant_consume_per_collision.max(0.0);
-    if consume_per_collision <= 0.0 {
-        return;
-    }
+    assert!(consume_per_collision > 0.0, "plant_consume_per_collision must be greater than 0.0");
 
     let mut animal_gain_by_entity: HashMap<Entity, f32> = HashMap::new();
     let mut plant_taken_by_entity: HashMap<Entity, f32> = HashMap::new();
@@ -815,28 +813,21 @@ fn handle_object_collision(
         }
     }
 
-    let mut consumed_energy = 0.0;
-    let mut depleted_plants = 0usize;
     for (plant_entity, taken_energy) in &plant_taken_by_entity {
         if let Ok(mut plant) = entities.p3().get_mut(*plant_entity) {
             plant.energy = (plant.energy - *taken_energy).max(0.0);
             plant.size = size_from_energy(plant.energy, &config);
-            consumed_energy += *taken_energy;
             if plant.energy <= 0.0 {
-                depleted_plants += 1;
                 commands.entity(*plant_entity).despawn();
             }
         }
     }
 
-    let mut depleted_prey = 0usize;
     for (prey_entity, taken_energy) in &prey_taken_by_entity {
         if let Ok(mut prey) = entities.p1().get_mut(*prey_entity) {
             prey.energy = (prey.energy - *taken_energy).max(0.0);
             prey.size = size_from_energy(prey.energy, &config);
-            consumed_energy += *taken_energy;
             if prey.energy <= 0.0 {
-                depleted_prey += 1;
                 despawn_animal(
                     &mut commands,
                     &mut *log,

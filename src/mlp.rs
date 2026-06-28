@@ -14,6 +14,7 @@ pub struct Genome {
     pub genes: Vec<f32>,
 }
 
+#[allow(dead_code)]
 impl Genome {
     pub fn random(rng: &mut impl Rng) -> Self {
         let genes = (0..GENOME_LEN).map(|_| rng.gen_range(-1.0..1.0)).collect();
