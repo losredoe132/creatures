@@ -81,7 +81,7 @@ impl EnergyPosition for Plant {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct Animal {
     pub id: u64,
     pub parent_id: Option<u64>,

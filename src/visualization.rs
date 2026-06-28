@@ -4,13 +4,13 @@ use crate::brain::think_with_vision;
 use crate::config::SimulationConfig;
 use crate::creature::{Animal, Plant};
 use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
-use crate::simulation::GlobalFrameCounter;
+use crate::simulation::{GlobalFrameCounter, PopulationSizeTracker};
 pub struct VisualizationPlugin;
 
 impl Plugin for VisualizationPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup_visualization)
-            .add_systems(Update, update_time_display)
+            .add_systems(PostUpdate, update_time_display)
             .add_systems(Update, draw_world_boundary)
             .add_systems(Update, draw_animal_perceptive_field)
             .add_systems(Update, draw_animal_movement_arrows)
@@ -28,7 +28,7 @@ fn setup_visualization(mut commands: Commands) {
     commands.spawn(Camera2d);
 
     commands.spawn((
-        Text::new("Frame: 0"),
+        Text::new("Frame: 0\nPlants: 0\nAnimals: 0\nFamilies: 0"),
         TextFont {
             font_size: FontSize::Px(14.0),
             ..default()
@@ -46,9 +46,19 @@ fn setup_visualization(mut commands: Commands) {
 fn update_time_display(
     mut query: Query<&mut Text, With<TimeDisplay>>,
     frame_count: Res<GlobalFrameCounter>,
+    tracker: Res<PopulationSizeTracker>,
 ) {
     for mut text in &mut query {
-        **text = format!("Frame: {}", frame_count.0);
+        **text = format!(
+            "Frame: {}\nPlants: {}\nAnimals: {} (H:{} O:{} C:{})\nFamilies: {}",
+            frame_count.0,
+            tracker.plants,
+            tracker.animals.herbivores + tracker.animals.omnivores + tracker.animals.carnivores,
+            tracker.animals.herbivores,
+            tracker.animals.omnivores,
+            tracker.animals.carnivores,
+            tracker.families.len()
+        );
     }
 }
 

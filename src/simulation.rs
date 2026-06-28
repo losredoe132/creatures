@@ -32,18 +32,18 @@ struct AnimalSpawnClock {
 }
 
 #[derive(Resource, Default, Debug, PartialEq, Eq)]
-struct AnimalPopulation {
-    carnivores: usize,
-    herbivores: usize,
-    omnivores: usize,
+pub struct AnimalPopulation {
+    pub carnivores: usize,
+    pub herbivores: usize,
+    pub omnivores: usize,
 }
 
 #[derive(Resource, Default)]
-struct PopulationSizeTracker {
-    plants: usize,
-    animals: AnimalPopulation,
-    families: BTreeMap<u32, usize>,
-    initialized: bool,
+pub struct PopulationSizeTracker {
+    pub plants: usize,
+    pub animals: AnimalPopulation,
+    pub families: BTreeMap<u32, usize>,
+    pub initialized: bool,
 }
 
 #[derive(Resource)]
@@ -157,14 +157,8 @@ fn despawn_animal(
     animal.despawn_at = Some(despawn_frame);
     let lifetime_duration = animal.despawn_at.unwrap_or_default() - animal.spawn_at;
     log.info(&format!(
-        "animal_despawn,reason={},spawn_at_frame={},despawn_at_frame={},lifetime_frames={},genome={:?},diet={:?},family={}",
-        reason,
-        animal.spawn_at,
-        animal.despawn_at.unwrap_or_default(),
-        lifetime_duration,
-        animal.genome.genes,
-        animal.diet, 
-        animal.family
+        "animal_despawn reason={} lifetime_frames={} animal={:?}",
+        reason, lifetime_duration, animal
     ));
     commands.entity(entity).despawn();
 }
@@ -529,7 +523,7 @@ fn reproduce_animals(
         let mut offspring_energy_total = 0.0;
 
         for _ in 0..2 {
-            let child_energy = spawn_energy ;
+            let child_energy = spawn_energy;
             offspring_energy_total += child_energy;
 
             let mut child_position = parent.position
@@ -556,7 +550,7 @@ fn reproduce_animals(
             ));
         }
 
-        parent.energy = (parent.energy - offspring_energy_total- 2.0*spawn_energy).max(0.0);
+        parent.energy = (parent.energy - offspring_energy_total - 2.0 * spawn_energy).max(0.0);
         parent.size = size_from_energy(parent.energy, &config);
     }
 
@@ -637,7 +631,6 @@ fn handle_object_collision(
         radius: f32,
         energy: f32,
         diet: Diet,
-        family: u32,
     }
 
     #[derive(Clone, Copy)]
@@ -659,7 +652,6 @@ fn handle_object_collision(
             radius: animal.size,
             energy: animal.energy,
             diet: animal.diet,
-            family: animal.family,
         })
         .collect::<Vec<_>>();
     let plants_snapshot = entities
@@ -678,12 +670,14 @@ fn handle_object_collision(
     }
 
     let consume_per_collision = config.tuning.plant_consume_per_collision.max(0.0);
-    assert!(consume_per_collision > 0.0, "plant_consume_per_collision must be greater than 0.0");
+    assert!(
+        consume_per_collision > 0.0,
+        "plant_consume_per_collision must be greater than 0.0"
+    );
 
     let mut animal_gain_by_entity: HashMap<Entity, f32> = HashMap::new();
     let mut plant_taken_by_entity: HashMap<Entity, f32> = HashMap::new();
     let mut prey_taken_by_entity: HashMap<Entity, f32> = HashMap::new();
-
 
     if !plants_snapshot.is_empty() {
         for predator in &animals_snapshot {
@@ -745,10 +739,16 @@ fn handle_object_collision(
             let can_predate = match predator.diet {
                 Diet::Herbivore => false,
                 Diet::Omnivore => {
-                    matches!(prey.diet, Diet::Herbivore | Diet::Omnivore | Diet::Carnivore)
+                    matches!(
+                        prey.diet,
+                        Diet::Herbivore | Diet::Omnivore | Diet::Carnivore
+                    )
                 }
                 Diet::Carnivore => {
-                    matches!(prey.diet, Diet::Herbivore | Diet::Omnivore | Diet::Carnivore)
+                    matches!(
+                        prey.diet,
+                        Diet::Herbivore | Diet::Omnivore | Diet::Carnivore
+                    )
                 }
             };
             if !can_predate {
@@ -760,10 +760,16 @@ fn handle_object_collision(
             let prey_can_counter_predate = match prey.diet {
                 Diet::Herbivore => false,
                 Diet::Omnivore => {
-                    matches!(predator.diet, Diet::Herbivore | Diet::Omnivore | Diet::Carnivore)
+                    matches!(
+                        predator.diet,
+                        Diet::Herbivore | Diet::Omnivore | Diet::Carnivore
+                    )
                 }
                 Diet::Carnivore => {
-                    matches!(predator.diet, Diet::Herbivore | Diet::Omnivore | Diet::Carnivore)
+                    matches!(
+                        predator.diet,
+                        Diet::Herbivore | Diet::Omnivore | Diet::Carnivore
+                    )
                 }
             };
             if prey_can_counter_predate {
@@ -839,7 +845,6 @@ fn handle_object_collision(
             }
         }
     }
-
 }
 
 fn ensure_torodial_world(translation: &mut Vec3, world_bounds: &WorldBounds) {
