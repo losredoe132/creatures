@@ -346,7 +346,7 @@ fn spawn_random_plant(
     source: &str,
     log: &mut SimulationLogger,
 ) {
-    let energy = 10.0;
+    let energy = rng.gen_range(5.0..=config.tuning.plant_max_energy);
     let plant = Plant {
         position: Vec2::new(
             rng.gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),
@@ -379,7 +379,7 @@ fn spawn_plant_nearby(
     .extend(0.0);
     ensure_torodial_world(&mut spawn_translation, &config.world_bounds);
 
-    let energy = 10.0;
+    let energy = rng.gen_range(5.0..=config.tuning.plant_max_energy/10.0).max(5.0);
     let plant = Plant {
         position: spawn_translation.xy(),
         energy,
