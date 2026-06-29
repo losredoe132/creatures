@@ -4,7 +4,7 @@ use crate::brain::think_with_vision;
 use crate::config::SimulationConfig;
 use crate::creature::{Animal, Carcass, Diet, Plant};
 use crate::sense::{AnimalSnapshot, CarcassSnapshot, PerceptionWorld, PlantSnapshot};
-use crate::simulation::{GlobalFrameCounter, PopulationSizeTracker};
+use crate::simulation::{GlobalFrameCounter, ManualZooSpawnEvent, PopulationSizeTracker};
 pub struct VisualizationPlugin;
 
 impl Plugin for VisualizationPlugin {
@@ -24,6 +24,7 @@ impl Plugin for VisualizationPlugin {
             .add_systems(Update, update_hover_panel.after(detect_animal_hover))
             .add_systems(Update, handle_pause_button)
             .add_systems(Update, handle_pause_keyboard)
+            .add_systems(Update, handle_zoo_spawn_button)
             .add_systems(
                 Update,
                 update_pause_button_text
@@ -62,6 +63,9 @@ struct PauseButton;
 
 #[derive(Component)]
 struct PauseButtonText;
+
+#[derive(Component)]
+struct ZooSpawnButton;
 
 #[derive(Component)]
 struct TimeDisplay;
@@ -249,6 +253,29 @@ fn setup_visualization(mut commands: Commands) {
                 PauseButtonText,
             ));
         });
+
+    commands
+        .spawn((
+            Button,
+            Node {
+                position_type: PositionType::Absolute,
+                bottom: Val::Px(8.0),
+                right: Val::Px(100.0),
+                padding: UiRect::axes(Val::Px(16.0), Val::Px(8.0)),
+                ..default()
+            },
+            BackgroundColor(Color::srgba(0.1, 0.2, 0.1, 0.9)),
+            ZooSpawnButton,
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                Text::new("Spawn from Zoo"),
+                TextFont {
+                    font_size: FontSize::Px(14.0),
+                    ..default()
+                },
+            ));
+        });
 }
 
 fn handle_pause_button(
@@ -287,6 +314,29 @@ fn handle_pause_keyboard(
             virtual_time.unpause();
         } else {
             virtual_time.pause();
+        }
+    }
+}
+
+fn handle_zoo_spawn_button(
+    mut interaction_q: Query<
+        (&Interaction, &mut BackgroundColor),
+        (Changed<Interaction>, With<ZooSpawnButton>),
+    >,
+    mut events: MessageWriter<ManualZooSpawnEvent>,
+) {
+    for (interaction, mut bg) in &mut interaction_q {
+        match interaction {
+            Interaction::Pressed => {
+                events.write(ManualZooSpawnEvent);
+                *bg = BackgroundColor(Color::srgba(0.3, 0.5, 0.3, 0.9));
+            }
+            Interaction::Hovered => {
+                *bg = BackgroundColor(Color::srgba(0.2, 0.35, 0.2, 0.9));
+            }
+            Interaction::None => {
+                *bg = BackgroundColor(Color::srgba(0.1, 0.2, 0.1, 0.9));
+            }
         }
     }
 }

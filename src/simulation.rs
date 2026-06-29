@@ -15,6 +15,9 @@ use crate::sense::{AnimalSnapshot, CarcassSnapshot, PerceptionWorld, PlantSnapsh
 use crate::utils::size_from_energy;
 use crate::zoo::{Zoo, ZooAnimal};
 
+#[derive(Message, Clone)]
+pub struct ManualZooSpawnEvent;
+
 pub struct SimulationPlugin;
 
 #[derive(Resource, Default)]
@@ -53,7 +56,8 @@ struct SimulationRng(StdRng);
 
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(GlobalFrameCounter::default())
+        app.add_message::<ManualZooSpawnEvent>()
+            .insert_resource(GlobalFrameCounter::default())
             .insert_resource(PlantSpawnClock::default())
             .insert_resource(AnimalSpawnClock::default())
             .insert_resource(PopulationSizeTracker::default())
@@ -80,6 +84,7 @@ impl Plugin for SimulationPlugin {
                     .chain()
                     .run_if(not_paused),
             )
+            .add_systems(Update, handle_manual_zoo_spawn)
             .add_systems(PostUpdate, log_population_size_changes);
         app.add_systems(Last, despawn_animals_on_shutdown);
     }
@@ -294,6 +299,20 @@ fn get_optimal_carnivore_genome() -> Vec<f32> {
     genome
 }
 
+fn get_optimal_scavenger_genome() -> Vec<f32> {
+    let mut genome = vec![0.0; GENOME_LEN];
+
+    // Move towards carcasses
+    genome[22 * 2] = 4.0; // genome[44]
+    genome[23 * 2 + 1] = 4.0; // genome[47]
+
+    // Run from carnivores
+    genome[4 * 2] = -4.0; // genome[8]
+    genome[5 * 2 + 1] = -4.0; // genome[11]
+
+    genome
+}
+
 fn get_optimal_omnivore_genome() -> Vec<f32> {
     let mut genome = vec![0.0; GENOME_LEN];
     genome[0] = 4.0;
@@ -371,6 +390,23 @@ fn setup_world(
     );
 
     commands.spawn(animal_omnivor);
+
+    let animal_scavenger = Animal::new(
+        rng.0.next_u64(),
+        None,
+        Diet::Scavenger,
+        Vec2::new(100.0, -100.0),
+        Vec2::new(0.0, 0.0),
+        Genome {
+            genes: get_optimal_scavenger_genome(),
+        },
+        &frame_count,
+        &config,
+        3,
+        0,
+    );
+
+    commands.spawn(animal_scavenger);
 
     for _ in 0..config.spawn_config.n_plants {
         spawn_random_plant(&mut commands, &config, &mut rng.0, "startup", &mut *log);
@@ -552,6 +588,45 @@ fn spawn_random_animal(
         spawn_source, animal.position.x, animal.position.y, animal.diet, animal.family
     ));
     commands.spawn(animal);
+}
+
+fn handle_manual_zoo_spawn(
+    mut events: MessageReader<ManualZooSpawnEvent>,
+    mut commands: Commands,
+    frame_count: Res<GlobalFrameCounter>,
+    config: Res<SimulationConfig>,
+    mut log: ResMut<SimulationLogger>,
+    mut rng: ResMut<SimulationRng>,
+    mut zoo: ResMut<Zoo>,
+) {
+    for _ in events.read() {
+        let (diet, genome, family, generation) = if let Some(entry) = zoo.sample(&mut rng.0) {
+            (entry.diet, entry.genome.clone(), entry.family, entry.generation)
+        } else {
+            (Diet::random(&mut rng.0), Genome::random(&mut rng.0), rng.0.next_u32(), 0)
+        };
+
+        let animal = Animal::new(
+            rng.0.next_u64(),
+            None,
+            diet,
+            Vec2::new(
+                rng.0.gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),
+                rng.0.gen_range(-config.world_bounds.half_height..config.world_bounds.half_height),
+            ),
+            Vec2::ZERO,
+            genome,
+            &frame_count,
+            &config,
+            family,
+            generation,
+        );
+        log.info(&format!(
+            "animal_spawn source=manual_zoo x={:.2} y={:.2} diet={:?} family={}",
+            animal.position.x, animal.position.y, animal.diet, animal.family
+        ));
+        commands.spawn(animal);
+    }
 }
 
 fn sample_spawn_delay(rate_per_sec: f32, rng: &mut impl Rng) -> f32 {

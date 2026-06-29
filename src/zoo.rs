@@ -114,6 +114,14 @@ impl Zoo {
         Self { entries, file_path }
     }
 
+    pub fn sample<'a>(&'a self, rng: &mut impl Rng) -> Option<&'a ZooAnimal> {
+        if self.entries.is_empty() {
+            return None;
+        }
+        let index = rng.gen_range(0..self.entries.len());
+        self.entries.get(index)
+    }
+
     pub fn maybe_sample<'a>(
         &'a self,
         rng: &mut impl Rng,
