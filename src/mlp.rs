@@ -3,7 +3,7 @@ use nalgebra as na;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-pub const MLP_INPUTS: usize = 25;
+pub const MLP_INPUTS: usize = 26;
 pub const MLP_HIDDEN_1: usize = 12;
 pub const MLP_HIDDEN_2: usize = 9;
 pub const MLP_OUTPUTS: usize = 2;
@@ -23,7 +23,7 @@ pub struct Genome {
 #[allow(dead_code)]
 impl Genome {
     pub fn random(rng: &mut impl Rng) -> Self {
-        let genes = (0..GENOME_LEN).map(|_| rng.gen_range(-1.0..1.0)).collect();
+        let genes = (0..GENOME_LEN).map(|_| rng.gen_range(-5.0..5.0)).collect();
         Self { genes }
     }
 

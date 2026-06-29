@@ -10,8 +10,8 @@ use crate::brain::think_with_vision;
 use crate::config::{SimulationConfig, WorldBounds};
 use crate::creature::{Animal, Carcass, Diet, EnergyPosition, Movable, Plant};
 use crate::logging::{ConsoleBackend, SimulationLogger, TextFileBackend};
-use crate::mlp::{GENOME_LEN, Genome, MLP_INPUTS, MLP_OUTPUTS};
-use crate::sense::{AnimalSnapshot, PerceptionWorld, PlantSnapshot};
+use crate::mlp::{GENOME_LEN, Genome, MLP_OUTPUTS};
+use crate::sense::{AnimalSnapshot, CarcassSnapshot, PerceptionWorld, PlantSnapshot};
 use crate::utils::size_from_energy;
 use crate::zoo::{Zoo, ZooAnimal};
 
@@ -60,7 +60,9 @@ impl Plugin for SimulationPlugin {
             .add_systems(Startup, (initialize_simulation_log, setup_world).chain())
             .add_systems(
                 First,
-                (advance_global_frame_counter, sync_logger_with_frame_counter).chain(),
+                (advance_global_frame_counter, sync_logger_with_frame_counter)
+                    .chain()
+                    .run_if(not_paused),
             )
             .add_systems(
                 Update,
@@ -75,11 +77,16 @@ impl Plugin for SimulationPlugin {
                     log_removed_animals,
                     reproduce_animals,
                 )
-                    .chain(),
+                    .chain()
+                    .run_if(not_paused),
             )
             .add_systems(PostUpdate, log_population_size_changes);
         app.add_systems(Last, despawn_animals_on_shutdown);
     }
+}
+
+fn not_paused(time: Res<Time<Virtual>>) -> bool {
+    !time.is_paused()
 }
 
 fn sync_logger_with_frame_counter(
@@ -168,6 +175,7 @@ fn despawn_animal(
             diet: animal.diet,
             genome: animal.genome.clone(),
             family: animal.family,
+            generation: animal.generation,
         },
         log,
     );
@@ -258,12 +266,12 @@ fn get_optimal_herbivore_genome() -> Vec<f32> {
     genome[MLP_OUTPUTS + 1] = 4.0;
 
     // Run from carnivores
-    genome[4 * 2] = -5.0; // genome[8]
-    genome[5 * 2 + 1] = -5.0; // genome[11]
+    genome[4 * 2] = -3.9; // genome[8]
+    genome[5 * 2 + 1] = -4.0; // genome[11]
 
     // Run from omnivores
     genome[14 * 2] = -4.0; // genome[28]
-    genome[15 * 2 + 1] = -5.0; // genome[31]
+    genome[15 * 2 + 1] = -3.9; // genome[31]
 
     genome
 }
@@ -272,16 +280,16 @@ fn get_optimal_carnivore_genome() -> Vec<f32> {
     let mut genome = vec![0.0; GENOME_LEN];
 
     // Run from carnivores
-    genome[4 * 2] = -1.0; // genome[8]
-    genome[5 * 2 + 1] = -1.0; // genome[11]
+    genome[4 * 2] = -0.3; // genome[8]
+    genome[5 * 2 + 1] = -0.3; // genome[11]
 
     // Run to herbivores
     genome[9 * 2] = 4.0; // genome[18]
     genome[10 * 2 + 1] = 4.0; // genome[21]
 
     // Run from omnivores
-    genome[14 * 2] = -4.0; // genome[28]
-    genome[15 * 2 + 1] = -4.0; // genome[31]
+    genome[14 * 2] = 4.0; // genome[28]
+    genome[15 * 2 + 1] = 4.0; // genome[31]
 
     genome
 }
@@ -325,6 +333,7 @@ fn setup_world(
         &frame_count,
         &config,
         0,
+        0,
     );
 
     commands.spawn(animal_herbivor);
@@ -341,6 +350,7 @@ fn setup_world(
         &frame_count,
         &config,
         1,
+        0,
     );
 
     commands.spawn(animal_carnivor);
@@ -357,6 +367,7 @@ fn setup_world(
         &frame_count,
         &config,
         2,
+        0,
     );
 
     commands.spawn(animal_omnivor);
@@ -509,13 +520,14 @@ fn spawn_random_animal(
     zoo: &mut Zoo,
 ) {
     let sampled = zoo.maybe_sample(rng, config.tuning.zoo_spawn_probability);
-    let (diet, genome, family, spawn_source) = if let Some(top) = sampled {
-        (top.diet, top.genome.clone(), top.family, "zoo")
+    let (diet, genome, family, generation, spawn_source) = if let Some(top) = sampled {
+        (top.diet, top.genome.clone(), top.family, top.generation, "zoo")
     } else {
         (
             Diet::random(rng),
             Genome::random(rng),
             rng.next_u32(),
+            0,
             source,
         )
     };
@@ -533,6 +545,7 @@ fn spawn_random_animal(
         frame_count,
         config,
         family,
+        generation,
     );
     log.debug(&format!(
         "animal_spawn source={} x={:.2} y={:.2}, diet ={:?},family={}",
@@ -549,6 +562,7 @@ fn sample_spawn_delay(rate_per_sec: f32, rng: &mut impl Rng) -> f32 {
 fn think_animals(
     mut animals: Query<&mut Animal>,
     plants: Query<&Plant>,
+    carcasses: Query<&Carcass>,
     config: Res<SimulationConfig>,
 ) {
     let plants_snapshot: Vec<PlantSnapshot> = plants
@@ -569,9 +583,18 @@ fn think_animals(
         })
         .collect();
 
+    let carcasses_snapshot: Vec<CarcassSnapshot> = carcasses
+        .iter()
+        .map(|carcass| CarcassSnapshot {
+            position: carcass.position,
+            energy: carcass.energy,
+        })
+        .collect();
+
     let world = PerceptionWorld {
         plants: &plants_snapshot,
         animals: &animals_snapshot,
+        carcasses: &carcasses_snapshot,
     };
 
     for mut animal in &mut animals {
@@ -751,6 +774,7 @@ fn reproduce_animals(
                 &frame_count,
                 &config,
                 parent.family,
+                parent.generation.saturating_add(1),
             ));
         }
 

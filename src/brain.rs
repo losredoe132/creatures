@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::creature::Diet;
 use crate::mlp::{Genome, MLP_INPUTS, mlp_movement};
-use crate::sense::{PerceivedAnimal, PerceivedPlant, Sense, Vision};
+use crate::sense::{PerceivedAnimal, PerceivedCarcass, PerceivedPlant, Sense, Vision};
 
 pub fn think_with_vision(
     vision: &Vision,
@@ -16,6 +16,7 @@ pub fn think_with_vision(
     let features = encode_perception_features(
         &sensed.plants,
         &sensed.animals,
+        &sensed.carcasses,
         vision.range.max(1.0),
         forward,
         self_energy,
@@ -27,11 +28,13 @@ pub fn think_with_vision(
 fn encode_perception_features(
     perceived_plants: &[PerceivedPlant],
     perceived_animals: &[PerceivedAnimal],
+    perceived_carcasses: &[PerceivedCarcass],
     vision_range: f32,
     self_velocity: Vec2,
     self_energy: f32,
 ) -> [f32; MLP_INPUTS] {
     let plant_features = encode_plant_features(perceived_plants, vision_range);
+    let carcass_features = encode_carcass_features(perceived_carcasses, vision_range);
 
     let carnivore_animals: Vec<PerceivedAnimal> = perceived_animals
         .iter()
@@ -81,6 +84,10 @@ fn encode_perception_features(
     features[19] = self_awareness_features[0];
     features[20] = self_awareness_features[1];
     features[21] = self_awareness_features[2];
+    features[22] = carcass_features[0];
+    features[23] = carcass_features[1];
+    features[24] = carcass_features[2];
+    features[25] = carcass_features[3];
     features
 }
 
@@ -108,6 +115,30 @@ fn encode_plant_features(perceived_plants: &[PerceivedPlant], vision_range: f32)
                 normalized_relative.y,
                 (plant.distance / vision_range).clamp(0.0, 1.0),
                 (plant.energy / 100.0).clamp(0.0, 1.0),
+            ]
+        })
+        .unwrap_or([0.0; 4])
+}
+
+fn encode_carcass_features(
+    perceived_carcasses: &[PerceivedCarcass],
+    vision_range: f32,
+) -> [f32; 4] {
+    let nearest = perceived_carcasses.iter().min_by(|a, b| {
+        a.distance
+            .partial_cmp(&b.distance)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    nearest
+        .map(|c| {
+            let normalized =
+                (c.relative_position / vision_range).clamp(Vec2::splat(-1.0), Vec2::splat(1.0));
+            [
+                normalized.x,
+                normalized.y,
+                (c.distance / vision_range).clamp(0.0, 1.0),
+                (c.energy / 100.0).clamp(0.0, 1.0),
             ]
         })
         .unwrap_or([0.0; 4])

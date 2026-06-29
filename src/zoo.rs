@@ -1,6 +1,7 @@
 use bevy::prelude::Resource;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -8,21 +9,32 @@ use crate::creature::Diet;
 use crate::logging::SimulationLogger;
 use crate::mlp::Genome;
 
-const ZOO_CAPACITY: usize = 10;
+const ZOO_PER_DIET: usize = 6;
 const DEFAULT_ZOO_PATH: &str = "logs/zoo.json";
 
-fn sort_and_truncate_by_lifetime(entries: &mut Vec<ZooAnimal>) {
-    entries.sort_by(|left, right| right.lifetime_frames.cmp(&left.lifetime_frames));
-    entries.truncate(ZOO_CAPACITY);
-}
+fn apply_zoo_rules(entries: &mut Vec<ZooAnimal>) {
+    // One entry per family: keep the longest-lived representative.
+    let mut best_per_family: HashMap<u32, ZooAnimal> = HashMap::new();
+    for entry in std::mem::take(entries) {
+        match best_per_family.entry(entry.family) {
+            std::collections::hash_map::Entry::Vacant(v) => {
+                v.insert(entry);
+            }
+            std::collections::hash_map::Entry::Occupied(mut o) => {
+                if entry.lifetime_frames > o.get().lifetime_frames {
+                    *o.get_mut() = entry;
+                }
+            }
+        }
+    }
 
-fn retain_top_per_diet(entries: &mut Vec<ZooAnimal>) {
+    // At most ZOO_PER_DIET per diet, ranked by lifetime.
     let mut herbivores = Vec::new();
     let mut omnivores = Vec::new();
     let mut carnivores = Vec::new();
     let mut scavengers = Vec::new();
 
-    for entry in std::mem::take(entries) {
+    for entry in best_per_family.into_values() {
         match entry.diet {
             Diet::Herbivore => herbivores.push(entry),
             Diet::Omnivore => omnivores.push(entry),
@@ -31,15 +43,11 @@ fn retain_top_per_diet(entries: &mut Vec<ZooAnimal>) {
         }
     }
 
-    sort_and_truncate_by_lifetime(&mut herbivores);
-    sort_and_truncate_by_lifetime(&mut omnivores);
-    sort_and_truncate_by_lifetime(&mut carnivores);
-    sort_and_truncate_by_lifetime(&mut scavengers);
-
-    entries.extend(herbivores);
-    entries.extend(omnivores);
-    entries.extend(carnivores);
-    entries.extend(scavengers);
+    for bucket in [&mut herbivores, &mut omnivores, &mut carnivores, &mut scavengers] {
+        bucket.sort_by(|a, b| b.lifetime_frames.cmp(&a.lifetime_frames));
+        bucket.truncate(ZOO_PER_DIET);
+        entries.extend(bucket.drain(..));
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -48,6 +56,7 @@ pub struct ZooAnimal {
     pub diet: Diet,
     pub genome: Genome,
     pub family: u32,
+    pub generation: u32,
 }
 
 #[derive(Resource, Debug)]
@@ -68,7 +77,7 @@ impl Zoo {
         let entries = match fs::read_to_string(&file_path) {
             Ok(raw) => match serde_json::from_str::<Vec<ZooAnimal>>(&raw) {
                 Ok(mut parsed) => {
-                    retain_top_per_diet(&mut parsed);
+                    apply_zoo_rules(&mut parsed);
                     log.info(&format!(
                         "zoo_load_completed path={} entries={}",
                         file_path.display(),
@@ -125,7 +134,7 @@ impl Zoo {
 
     pub fn consider_and_persist(&mut self, candidate: ZooAnimal, log: &mut SimulationLogger) {
         self.entries.push(candidate);
-        retain_top_per_diet(&mut self.entries);
+        apply_zoo_rules(&mut self.entries);
         if let Err(err) = self.persist() {
             log.warn(&format!(
                 "zoo_save_failed path={} error={}",

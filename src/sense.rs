@@ -42,15 +42,30 @@ pub struct AnimalSnapshot {
     pub energy: f32,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct CarcassSnapshot {
+    pub position: Vec2,
+    pub energy: f32,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct PerceivedCarcass {
+    pub relative_position: Vec2,
+    pub distance: f32,
+    pub energy: f32,
+}
+
 pub struct PerceptionWorld<'a> {
     pub plants: &'a [PlantSnapshot],
     pub animals: &'a [AnimalSnapshot],
+    pub carcasses: &'a [CarcassSnapshot],
 }
 
 #[derive(Debug, Clone)]
 pub struct PerceivedVision {
     pub plants: Vec<PerceivedPlant>,
     pub animals: Vec<PerceivedAnimal>,
+    pub carcasses: Vec<PerceivedCarcass>,
 }
 
 impl Sense for Vision {
@@ -95,8 +110,24 @@ impl Sense for Vision {
             })
             .collect();
 
-        
-        PerceivedVision { plants, animals }
+        let carcasses: Vec<PerceivedCarcass> = world
+            .carcasses
+            .iter()
+            .filter(|carcass| {
+                let offset = carcass.position - origin;
+                within_perceptive_field(offset, forward, self.range)
+            })
+            .map(|carcass| {
+                let relative_position = carcass.position - origin;
+                PerceivedCarcass {
+                    relative_position,
+                    distance: relative_position.length(),
+                    energy: carcass.energy,
+                }
+            })
+            .collect();
+
+        PerceivedVision { plants, animals, carcasses }
     }
 }
 
