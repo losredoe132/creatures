@@ -3,17 +3,12 @@ use nalgebra as na;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-pub const MLP_INPUTS: usize = 26;
+pub const MLP_INPUTS: usize = 2;
 pub const MLP_HIDDEN_1: usize = 12;
 pub const MLP_HIDDEN_2: usize = 9;
 pub const MLP_OUTPUTS: usize = 2;
 
-pub const GENOME_LEN: usize = MLP_INPUTS * MLP_HIDDEN_1
-    + MLP_HIDDEN_1
-    + MLP_HIDDEN_1 * MLP_HIDDEN_2
-    + MLP_HIDDEN_2
-    + MLP_HIDDEN_2 * MLP_OUTPUTS
-    + MLP_OUTPUTS;
+pub const GENOME_LEN: usize = MLP_INPUTS * MLP_OUTPUTS + MLP_OUTPUTS;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Genome {
@@ -60,7 +55,7 @@ pub fn mlp_movement(features: [f32; MLP_INPUTS], genome: &Genome) -> MovementOut
     let b1_start = MLP_INPUTS * MLP_OUTPUTS;
     let b1: na::RowSVector<f32, MLP_OUTPUTS> =
         na::RowSVector::from_row_slice(&genome.genes[b1_start..b1_start + MLP_OUTPUTS]);
-    let y = x * w1 + b1;
+    let y = x * w1+ b1*0.1;
 
     // // hidden_1: 1xMLP_HIDDEN_1
     // let hidden_1 = x * w1 + b1;

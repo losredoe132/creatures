@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 use crate::creature::Diet;
 use crate::logging::SimulationLogger;
-use crate::mlp::Genome;
+use crate::mlp::{Genome, GENOME_LEN};
 
 const ZOO_PER_DIET: usize = 6;
 const DEFAULT_ZOO_PATH: &str = "logs/zoo.json";
@@ -77,6 +77,7 @@ impl Zoo {
         let entries = match fs::read_to_string(&file_path) {
             Ok(raw) => match serde_json::from_str::<Vec<ZooAnimal>>(&raw) {
                 Ok(mut parsed) => {
+                    parsed.retain(|a| a.genome.genes.len() == GENOME_LEN);
                     apply_zoo_rules(&mut parsed);
                     log.info(&format!(
                         "zoo_load_completed path={} entries={}",

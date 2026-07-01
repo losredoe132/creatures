@@ -289,12 +289,12 @@ fn get_optimal_carnivore_genome() -> Vec<f32> {
     genome[5 * 2 + 1] = -0.3; // genome[11]
 
     // Run to herbivores
-    genome[9 * 2] = 4.0; // genome[18]
-    genome[10 * 2 + 1] = 4.0; // genome[21]
+    genome[9 * 2] = 1.0; // genome[18]
+    genome[10 * 2 + 1] = 1.0; // genome[21]
 
     // Run from omnivores
-    genome[14 * 2] = 4.0; // genome[28]
-    genome[15 * 2 + 1] = 4.0; // genome[31]
+    genome[14 * 2] = 1.0; // genome[28]
+    genome[15 * 2 + 1] = 1.0; // genome[31]
 
     genome
 }
@@ -303,12 +303,12 @@ fn get_optimal_scavenger_genome() -> Vec<f32> {
     let mut genome = vec![0.0; GENOME_LEN];
 
     // Move towards carcasses
-    genome[22 * 2] = 4.0; // genome[44]
-    genome[23 * 2 + 1] = 4.0; // genome[47]
+    genome[22 * 2] = 1.0; // genome[44]
+    genome[23 * 2 + 1] = 1.0; // genome[47]
 
     // Run from carnivores
-    genome[4 * 2] = -4.0; // genome[8]
-    genome[5 * 2 + 1] = -4.0; // genome[11]
+    genome[4 * 2] = -1.0; // genome[8]
+    genome[5 * 2 + 1] = -1.0; // genome[11]
 
     genome
 }
@@ -319,16 +319,16 @@ fn get_optimal_omnivore_genome() -> Vec<f32> {
     genome[MLP_OUTPUTS + 1] = 4.0;
 
     // Run from carnivores
-    genome[4 * 2] = -4.0; // genome[8]
-    genome[5 * 2 + 1] = -4.0; // genome[11]
+    genome[4 * 2] = -1.0; // genome[8]
+    genome[5 * 2 + 1] = -1.0; // genome[11]
 
     // Run to herbivores
-    genome[9 * 2] = 4.0; // genome[18]
-    genome[10 * 2 + 1] = 4.0; // genome[21]
+    genome[9 * 2] = 1.0; // genome[18]
+    genome[10 * 2 + 1] = 1.0; // genome[21]
 
     // Run from omnivores
-    genome[14 * 2] = 4.0; // genome[28]
-    genome[15 * 2 + 1] = 4.0; // genome[31]
+    genome[14 * 2] = 1.0; // genome[28]
+    genome[15 * 2 + 1] = 1.0; // genome[31]
 
     genome
 }
@@ -340,73 +340,73 @@ fn setup_world(
     config: Res<SimulationConfig>,
     mut rng: ResMut<SimulationRng>,
 ) {
-    let animal_herbivor = Animal::new(
-        rng.0.next_u64(),
-        None,
-        Diet::Herbivore,
-        Vec2::new(100.0, 100.0),
-        Vec2::new(0.0, 0.0),
-        Genome {
-            genes: get_optimal_herbivore_genome(),
-        },
-        &frame_count,
-        &config,
-        0,
-        0,
-    );
+    // let animal_herbivor = Animal::new(
+    //     rng.0.next_u64(),
+    //     None,
+    //     Diet::Herbivore,
+    //     Vec2::new(100.0, 100.0),
+    //     Vec2::new(0.0, 0.0),
+    //     Genome {
+    //         genes: get_optimal_herbivore_genome(),
+    //     },
+    //     &frame_count,
+    //     &config,
+    //     0,
+    //     0,
+    // );
 
-    commands.spawn(animal_herbivor);
+    // commands.spawn(animal_herbivor);
 
-    let animal_carnivor = Animal::new(
-        rng.0.next_u64(),
-        None,
-        Diet::Carnivore,
-        Vec2::new(0.0, 0.0),
-        Vec2::new(0.0, 0.0),
-        Genome {
-            genes: get_optimal_carnivore_genome(),
-        },
-        &frame_count,
-        &config,
-        1,
-        0,
-    );
+    // let animal_carnivor = Animal::new(
+    //     rng.0.next_u64(),
+    //     None,
+    //     Diet::Carnivore,
+    //     Vec2::new(0.0, 0.0),
+    //     Vec2::new(0.0, 100.0),
+    //     Genome {
+    //         genes: get_optimal_carnivore_genome(),
+    //     },
+    //     &frame_count,
+    //     &config,
+    //     1,
+    //     0,
+    // );
 
-    commands.spawn(animal_carnivor);
+    // commands.spawn(animal_carnivor);
 
-    let animal_omnivor = Animal::new(
-        rng.0.next_u64(),
-        None,
-        Diet::Omnivore,
-        Vec2::new(-100.0, 100.0),
-        Vec2::new(0.0, 0.0),
-        Genome {
-            genes: get_optimal_omnivore_genome(),
-        },
-        &frame_count,
-        &config,
-        2,
-        0,
-    );
+    // let animal_omnivor = Animal::new(
+    //     rng.0.next_u64(),
+    //     None,
+    //     Diet::Omnivore,
+    //     Vec2::new(-100.0, 100.0),
+    //     Vec2::new(100.0, 0.0),
+    //     Genome {
+    //         genes: get_optimal_omnivore_genome(),
+    //     },
+    //     &frame_count,
+    //     &config,
+    //     2,
+    //     0,
+    // );
 
-    commands.spawn(animal_omnivor);
+    // commands.spawn(animal_omnivor);
 
-    let animal_scavenger = Animal::new(
-        rng.0.next_u64(),
-        None,
-        Diet::Scavenger,
-        Vec2::new(100.0, -100.0),
-        Vec2::new(0.0, 0.0),
-        Genome {
-            genes: get_optimal_scavenger_genome(),
-        },
-        &frame_count,
-        &config,
-        3,
-        0,
-    );
+    // let animal_scavenger = Animal::new(
+    //     rng.0.next_u64(),
+    //     None,
+    //     Diet::Scavenger,
+    //     Vec2::new(100.0, -100.0),
+    //     Vec2::new(0.0, 0.0),
+    //     Genome {
+    //         genes: get_optimal_scavenger_genome(),
+    //     },
+    //     &frame_count,
+    //     &config,
+    //     3,
+    //     0,
+    // );
 
-    commands.spawn(animal_scavenger);
+    // commands.spawn(animal_scavenger);
 
     for _ in 0..config.spawn_config.n_plants {
         spawn_random_plant(&mut commands, &config, &mut rng.0, "startup", &mut *log);
@@ -557,7 +557,13 @@ fn spawn_random_animal(
 ) {
     let sampled = zoo.maybe_sample(rng, config.tuning.zoo_spawn_probability);
     let (diet, genome, family, generation, spawn_source) = if let Some(top) = sampled {
-        (top.diet, top.genome.clone(), top.family, top.generation, "zoo")
+        (
+            top.diet,
+            top.genome.clone(),
+            top.family,
+            top.generation,
+            "zoo",
+        )
     } else {
         (
             Diet::random(rng),
@@ -597,32 +603,27 @@ fn handle_manual_zoo_spawn(
     config: Res<SimulationConfig>,
     mut log: ResMut<SimulationLogger>,
     mut rng: ResMut<SimulationRng>,
-    mut zoo: ResMut<Zoo>,
 ) {
     for _ in events.read() {
-        let (diet, genome, family, generation) = if let Some(entry) = zoo.sample(&mut rng.0) {
-            (entry.diet, entry.genome.clone(), entry.family, entry.generation)
-        } else {
-            (Diet::random(&mut rng.0), Genome::random(&mut rng.0), rng.0.next_u32(), 0)
-        };
-
         let animal = Animal::new(
             rng.0.next_u64(),
             None,
-            diet,
+            Diet::random(&mut rng.0),
             Vec2::new(
-                rng.0.gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),
-                rng.0.gen_range(-config.world_bounds.half_height..config.world_bounds.half_height),
+                rng.0
+                    .gen_range(-config.world_bounds.half_width..config.world_bounds.half_width),
+                rng.0
+                    .gen_range(-config.world_bounds.half_height..config.world_bounds.half_height),
             ),
             Vec2::ZERO,
-            genome,
+            Genome::random(&mut rng.0),
             &frame_count,
             &config,
-            family,
-            generation,
+            rng.0.next_u32(),
+            0,
         );
         log.info(&format!(
-            "animal_spawn source=manual_zoo x={:.2} y={:.2} diet={:?} family={}",
+            "animal_spawn source=manual_random x={:.2} y={:.2} diet={:?} family={}",
             animal.position.x, animal.position.y, animal.diet, animal.family
         ));
         commands.spawn(animal);
@@ -682,18 +683,14 @@ fn think_animals(
             &world,
         );
 
-        let new_velocity = ((1.0 - config.tuning.animal_inertia)
-            * movement
-            * config.tuning.animal_max_speed.max(0.0))
-            + (config.tuning.animal_inertia * animal.velocity);
+        let new_velocity = movement * config.tuning.animal_max_speed.max(0.0);
         animal.set_velocity(new_velocity);
     }
 }
 
 fn calculate_energy_drain(animal: &Animal, config: &SimulationConfig, delta_secs: f32) -> f32 {
-    let speed_ratio = (animal.velocity().length() / config.tuning.animal_speed_reference).max(0.0);
-    let speed_drain = config.tuning.animal_speed_energy_drain_per_sec
-        * ((config.tuning.animal_speed_exponent * speed_ratio).exp() - 1.0);
+    let speed_ratio = (animal.velocity().length() / config.tuning.animal_max_speed).max(0.0);
+    let speed_drain = config.tuning.animal_speed_energy_drain_per_sec * speed_ratio;
     let brain_drain = calculate_brain_drain(&animal.genome, config);
     (config.tuning.animal_base_energy_drain_per_sec + speed_drain + brain_drain) * delta_secs
 }

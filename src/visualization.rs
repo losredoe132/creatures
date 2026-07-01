@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 
-use crate::brain::think_with_vision;
+use crate::brain::{compute_features, think_with_vision};
 use crate::config::SimulationConfig;
 use crate::creature::{Animal, Carcass, Diet, Plant};
+use crate::mlp::{MLP_INPUTS, MLP_OUTPUTS};
 use crate::sense::{AnimalSnapshot, CarcassSnapshot, PerceptionWorld, PlantSnapshot};
 use crate::simulation::{GlobalFrameCounter, ManualZooSpawnEvent, PopulationSizeTracker};
 pub struct VisualizationPlugin;
@@ -10,18 +11,40 @@ pub struct VisualizationPlugin;
 impl Plugin for VisualizationPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<HoveredAnimal>()
-            .add_systems(Startup, (setup_visualization, setup_hover_panel))
+            .init_resource::<SelectedAnimalId>()
+            .init_resource::<CurrentMlpState>()
+            .init_resource::<MlpLayout>()
+            .init_resource::<MlpHovered>()
+            .add_systems(
+                Startup,
+                (setup_visualization, setup_hover_panel, setup_mlp_tooltip),
+            )
             .add_systems(PostUpdate, update_time_display)
             .add_systems(Update, draw_world_boundary)
             .add_systems(Update, draw_animal_perceptive_field)
             .add_systems(Update, draw_animal_movement_arrows)
             .add_systems(Update, attach_animal_visuals)
             .add_systems(Update, attach_plant_visuals)
-            .add_systems(Update, attach_carcass_visuals)
+            //.add_systems(Update, attach_carcass_visuals)
             .add_systems(Update, update_animal_visual_sizes)
             .add_systems(Update, update_plant_visual_sizes)
-            .add_systems(Update, detect_animal_hover)
-            .add_systems(Update, update_hover_panel.after(detect_animal_hover))
+            .add_systems(Update, handle_animal_click)
+            .add_systems(Update, refresh_selected_animal.after(handle_animal_click))
+            .add_systems(Update, refresh_mlp_state.after(refresh_selected_animal))
+            .add_systems(Update, update_hover_panel.after(refresh_selected_animal))
+            .add_systems(
+                Update,
+                draw_selection_indicator.after(refresh_selected_animal),
+            )
+            .add_systems(Update, compute_mlp_layout.after(refresh_mlp_state))
+            .add_systems(Update, detect_mlp_hover.after(compute_mlp_layout))
+            .add_systems(Update, update_mlp_tooltip.after(detect_mlp_hover))
+            .add_systems(
+                Update,
+                draw_mlp_visualization
+                    .after(compute_mlp_layout)
+                    .after(detect_mlp_hover),
+            )
             .add_systems(Update, handle_pause_button)
             .add_systems(Update, handle_pause_keyboard)
             .add_systems(Update, handle_zoo_spawn_button)
@@ -38,9 +61,10 @@ struct HoveredAnimalData {
     id: u64,
     parent_id: Option<u64>,
     diet: Diet,
+    position: Vec2,
+    velocity: Vec2,
     energy: f32,
     initial_energy: f32,
-    speed: f32,
     size: f32,
     vision_range: f32,
     family: u32,
@@ -51,6 +75,60 @@ struct HoveredAnimalData {
 
 #[derive(Resource, Default)]
 struct HoveredAnimal(Option<HoveredAnimalData>);
+
+#[derive(Resource, Default)]
+struct SelectedAnimalId(Option<u64>);
+
+const INPUT_LABELS: [&str; MLP_INPUTS] = ["plant dx", "plant dy"];
+const OUTPUT_LABELS: [&str; MLP_OUTPUTS] = ["move x", "move y"];
+
+#[derive(Resource)]
+struct MlpLayout {
+    x_in: f32,
+    x_out: f32,
+    y_top: f32,
+    y_bot: f32,
+}
+
+impl Default for MlpLayout {
+    fn default() -> Self {
+        Self {
+            x_in: 0.0,
+            x_out: 0.0,
+            y_top: 20.0,
+            y_bot: 580.0,
+        }
+    }
+}
+
+#[derive(Resource, Default)]
+struct CurrentMlpState {
+    features: [f32; MLP_INPUTS],
+    outputs: [f32; MLP_OUTPUTS],
+    valid: bool,
+}
+
+#[derive(Default, PartialEq, Clone, Copy)]
+enum MlpHoverTarget {
+    #[default]
+    None,
+    InputNode(usize),
+    OutputNode(usize),
+    Edge { input: usize, output: usize },
+}
+
+#[derive(Resource, Default)]
+struct MlpHovered {
+    target: MlpHoverTarget,
+    value: f32,
+    screen_pos: Vec2,
+}
+
+#[derive(Component)]
+struct MlpTooltip;
+
+#[derive(Component)]
+struct MlpTooltipText;
 
 #[derive(Component)]
 struct HoverPanel;
@@ -98,52 +176,106 @@ fn setup_hover_panel(mut commands: Commands) {
         });
 }
 
-fn detect_animal_hover(
+fn setup_mlp_tooltip(mut commands: Commands) {
+    commands
+        .spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                padding: UiRect::axes(Val::Px(6.0), Val::Px(3.0)),
+                ..default()
+            },
+            BackgroundColor(Color::srgba(0.05, 0.05, 0.1, 0.9)),
+            Visibility::Hidden,
+            MlpTooltip,
+        ))
+        .with_children(|p| {
+            p.spawn((
+                Text::new(""),
+                TextFont {
+                    font_size: FontSize::Px(11.0),
+                    ..default()
+                },
+                MlpTooltipText,
+            ));
+        });
+}
+
+fn handle_animal_click(
     windows: Query<&Window>,
     camera_q: Query<(&Camera, &GlobalTransform)>,
     animals: Query<&Animal>,
-    mut hovered: ResMut<HoveredAnimal>,
-    frame_count: Res<GlobalFrameCounter>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    mut selected: ResMut<SelectedAnimalId>,
 ) {
+    if !mouse.just_pressed(MouseButton::Left) {
+        return;
+    }
     let Ok(window) = windows.single() else { return };
     let Ok((camera, cam_transform)) = camera_q.single() else {
         return;
     };
-
     let Some(cursor_pos) = window.cursor_position() else {
-        hovered.0 = None;
         return;
     };
-
     let Ok(world_pos) = camera.viewport_to_world_2d(cam_transform, cursor_pos) else {
-        hovered.0 = None;
         return;
     };
 
-    let mut closest: Option<(&Animal, f32)> = None;
+    let mut closest: Option<(u64, f32)> = None;
     for animal in &animals {
         let dist = animal.position.distance(world_pos);
         if dist <= animal.size {
             if closest.is_none_or(|(_, d)| dist < d) {
-                closest = Some((animal, dist));
+                closest = Some((animal.id, dist));
             }
         }
     }
+    selected.0 = closest.map(|(id, _)| id);
+}
 
-    hovered.0 = closest.map(|(animal, _)| HoveredAnimalData {
-        id: animal.id,
-        parent_id: animal.parent_id,
-        diet: animal.diet,
-        energy: animal.energy,
-        initial_energy: animal.initial_energy,
-        speed: animal.velocity.length(),
-        size: animal.size,
-        vision_range: animal.vision.range,
-        family: animal.family,
-        generation: animal.generation,
-        age: frame_count.0.saturating_sub(animal.spawn_at),
-        genes: animal.genome.genes.clone(),
-    });
+fn refresh_selected_animal(
+    animals: Query<&Animal>,
+    mut selected: ResMut<SelectedAnimalId>,
+    frame_count: Res<GlobalFrameCounter>,
+    mut hovered: ResMut<HoveredAnimal>,
+) {
+    let Some(id) = selected.0 else {
+        hovered.0 = None;
+        return;
+    };
+
+    match animals.iter().find(|a| a.id == id) {
+        None => {
+            selected.0 = None;
+            hovered.0 = None;
+        }
+        Some(animal) => {
+            hovered.0 = Some(HoveredAnimalData {
+                id: animal.id,
+                parent_id: animal.parent_id,
+                diet: animal.diet,
+                position: animal.position,
+                velocity: animal.velocity,
+                energy: animal.energy,
+                initial_energy: animal.initial_energy,
+                size: animal.size,
+                vision_range: animal.vision.range,
+                family: animal.family,
+                generation: animal.generation,
+                age: frame_count.0.saturating_sub(animal.spawn_at),
+                genes: animal.genome.genes.clone(),
+            });
+        }
+    }
+}
+
+fn draw_selection_indicator(hovered: Res<HoveredAnimal>, mut gizmos: Gizmos) {
+    let Some(data) = &hovered.0 else { return };
+    gizmos.circle_2d(
+        data.position,
+        data.size * 2.0,
+        Color::srgba(1.0, 1.0, 1.0, 0.75),
+    );
 }
 
 fn update_hover_panel(
@@ -164,49 +296,18 @@ fn update_hover_panel(
         }
         Some(d) => {
             *visibility = Visibility::Visible;
-            let max_abs = d
-                .genes
-                .iter()
-                .map(|v| v.abs())
-                .fold(0.0_f32, f32::max)
-                .max(1.0);
-            let genome_str = d
-                .genes
-                .chunks(10)
-                .map(|row| {
-                    row.iter()
-                        .map(|v| {
-                            let t = (v.abs() / max_abs).clamp(0.0, 1.0);
-                            let block = if t < 0.2 {
-                                '░'
-                            } else if t < 0.5 {
-                                '▒'
-                            } else if t < 0.8 {
-                                '▓'
-                            } else {
-                                '█'
-                            };
-                            format!("{}{:+.2}", block, v)
-                        })
-                        .collect::<Vec<_>>()
-                        .join(" ")
-                })
-                .collect::<Vec<_>>()
-                .join("\n");
             **text = format!(
-                "ID: {}\nParent: {}\nDiet: {:?}\nEnergy: {:.1}\nSpeed: {:.2}\nSize: {:.2}\nVision: {:.1}\nFamily: {}\nGeneration: {}\nAge: {}\nGenome ({}):\n{}",
+                "ID: {}\nParent: {}\nDiet: {:?}\nEnergy: {:.1}\nSpeed: {:.2}\nSize: {:.2}\nVision: {:.1}\nFamily: {}\nGeneration: {}\nAge: {}",
                 d.id,
                 d.parent_id.map_or("none".to_string(), |p| p.to_string()),
                 d.diet,
                 d.energy,
-                d.speed,
+                d.velocity.length(),
                 d.size,
                 d.vision_range,
                 d.family,
                 d.generation,
                 d.age,
-                d.genes.len(),
-                genome_str,
             );
         }
     }
@@ -269,7 +370,7 @@ fn setup_visualization(mut commands: Commands) {
         ))
         .with_children(|parent| {
             parent.spawn((
-                Text::new("Spawn from Zoo"),
+                Text::new("Spawn Random"),
                 TextFont {
                     font_size: FontSize::Px(14.0),
                     ..default()
@@ -409,18 +510,17 @@ fn draw_world_boundary(mut gizmos: Gizmos, config: Res<SimulationConfig>) {
     gizmos.line_2d(bottom_left, top_left, boundary_color);
 }
 
-fn draw_animal_perceptive_field(mut gizmos: Gizmos, query: Query<&Animal>) {
-    let cone_color = Color::srgba(0.2, 0.9, 1.0, 0.12);
-    for animal in &query {
-        let origin = animal.position;
-
-        let range = animal.vision.range;
-
-        gizmos.circle_2d(origin, range, cone_color);
-    }
+fn draw_animal_perceptive_field(hovered: Res<HoveredAnimal>, mut gizmos: Gizmos) {
+    let Some(data) = &hovered.0 else { return };
+    gizmos.circle_2d(data.position, data.vision_range, Color::srgba(0.2, 0.9, 1.0, 0.18));
 }
 
-fn draw_animal_movement_arrows(mut gizmos: Gizmos, animals: Query<&Animal>, plants: Query<&Plant>, carcasses: Query<&Carcass>) {
+fn draw_animal_movement_arrows(
+    mut gizmos: Gizmos,
+    animals: Query<&Animal>,
+    plants: Query<&Plant>,
+    carcasses: Query<&Carcass>,
+) {
     let plants_snapshot: Vec<PlantSnapshot> = plants
         .iter()
         .map(|plant| PlantSnapshot {
@@ -534,6 +634,287 @@ fn attach_plant_visuals(
 fn update_plant_visual_sizes(mut query: Query<(&Plant, &mut Transform), Changed<Plant>>) {
     for (plant, mut transform) in &mut query {
         transform.scale = Vec3::splat(plant.size);
+    }
+}
+
+fn refresh_mlp_state(
+    hovered: Res<HoveredAnimal>,
+    animals: Query<&Animal>,
+    plants: Query<&Plant>,
+    carcasses: Query<&Carcass>,
+    mut state: ResMut<CurrentMlpState>,
+) {
+    let Some(data) = &hovered.0 else {
+        state.valid = false;
+        return;
+    };
+
+    let plants_snap: Vec<PlantSnapshot> = plants
+        .iter()
+        .map(|p| PlantSnapshot {
+            position: p.position,
+            energy: p.energy,
+        })
+        .collect();
+    let animals_snap: Vec<AnimalSnapshot> = animals
+        .iter()
+        .map(|a| AnimalSnapshot {
+            diet: a.diet,
+            position: a.position,
+            velocity: a.velocity,
+            energy: a.energy,
+        })
+        .collect();
+    let carcasses_snap: Vec<CarcassSnapshot> = carcasses
+        .iter()
+        .map(|c| CarcassSnapshot {
+            position: c.position,
+            energy: c.energy,
+        })
+        .collect();
+    let world = PerceptionWorld {
+        plants: &plants_snap,
+        animals: &animals_snap,
+        carcasses: &carcasses_snap,
+    };
+
+    state.features = compute_features(
+        data.vision_range,
+        data.position,
+        data.velocity,
+        data.energy,
+        &world,
+    );
+
+    let genes = &data.genes;
+    for o in 0..MLP_OUTPUTS {
+        state.outputs[o] = genes
+            .get(MLP_INPUTS * MLP_OUTPUTS + o)
+            .copied()
+            .unwrap_or(0.0);
+        for i in 0..MLP_INPUTS {
+            state.outputs[o] += state.features[i] * genes[i * MLP_OUTPUTS + o];
+        }
+    }
+    state.valid = true;
+}
+
+fn compute_mlp_layout(
+    windows: Query<&Window>,
+    panel_q: Query<(&ComputedNode, &Visibility), With<HoverPanel>>,
+    mut layout: ResMut<MlpLayout>,
+) {
+    let Ok(window) = windows.single() else { return };
+    let w = window.width();
+    let h = window.height();
+    let scale = window.scale_factor() as f32;
+
+    layout.x_in = w - 190.0;
+    layout.x_out = w - 50.0;
+    layout.y_bot = h - 20.0;
+    layout.y_top = match panel_q.single() {
+        Ok((computed, vis)) if *vis != Visibility::Hidden => 8.0 + computed.size.y / scale + 12.0,
+        _ => 20.0,
+    };
+}
+
+fn seg_dist(p: Vec2, a: Vec2, b: Vec2) -> f32 {
+    let ab = b - a;
+    let t = if ab.dot(ab) > 0.0 { ((p - a).dot(ab) / ab.dot(ab)).clamp(0.0, 1.0) } else { 0.0 };
+    (p - (a + ab * t)).length()
+}
+
+fn detect_mlp_hover(
+    windows: Query<&Window>,
+    layout: Res<MlpLayout>,
+    mlp_state: Res<CurrentMlpState>,
+    animal: Res<HoveredAnimal>,
+    mut hovered: ResMut<MlpHovered>,
+) {
+    hovered.target = MlpHoverTarget::None;
+    if !mlp_state.valid { return; }
+    let Ok(window) = windows.single() else { return };
+    let Some(cursor) = window.cursor_position() else { return };
+
+    let x_in  = layout.x_in;
+    let x_out = layout.x_out;
+    let y_top = layout.y_top;
+    let y_bot = layout.y_bot;
+    let node_hit = 8.0f32;
+    let edge_hit = 5.0f32;
+
+    let input_sy  = |i: usize| y_top + (i as f32 + 0.5) * (y_bot - y_top) / MLP_INPUTS  as f32;
+    let output_sy = |o: usize| y_top + (o as f32 + 0.5) * (y_bot - y_top) / MLP_OUTPUTS as f32;
+
+    // Nodes take priority over edges
+    for i in 0..MLP_INPUTS {
+        let sy = input_sy(i);
+        if cursor.distance(Vec2::new(x_in, sy)) <= node_hit {
+            hovered.target    = MlpHoverTarget::InputNode(i);
+            hovered.value     = mlp_state.features[i];
+            hovered.screen_pos = Vec2::new(x_in, sy);
+            return;
+        }
+    }
+    for o in 0..MLP_OUTPUTS {
+        let sy = output_sy(o);
+        if cursor.distance(Vec2::new(x_out, sy)) <= node_hit {
+            hovered.target    = MlpHoverTarget::OutputNode(o);
+            hovered.value     = mlp_state.outputs[o];
+            hovered.screen_pos = Vec2::new(x_out, sy);
+            return;
+        }
+    }
+
+    // Edge hit-test — weight is read directly from the selected animal's genome
+    if let Some(data) = &animal.0 {
+        for i in 0..MLP_INPUTS {
+            let a = Vec2::new(x_in, input_sy(i));
+            for o in 0..MLP_OUTPUTS {
+                let b = Vec2::new(x_out, output_sy(o));
+                if seg_dist(cursor, a, b) <= edge_hit {
+                    hovered.target     = MlpHoverTarget::Edge { input: i, output: o };
+                    hovered.value      = data.genes.get(i * MLP_OUTPUTS + o).copied().unwrap_or(0.0);
+                    hovered.screen_pos = (a + b) * 0.5;
+                    return;
+                }
+            }
+        }
+    }
+}
+
+fn update_mlp_tooltip(
+    hovered: Res<MlpHovered>,
+    mut tooltip_q: Query<(&mut Node, &mut Visibility), With<MlpTooltip>>,
+    mut text_q: Query<&mut Text, With<MlpTooltipText>>,
+) {
+    let Ok((mut node, mut vis)) = tooltip_q.single_mut() else { return };
+    let Ok(mut text) = text_q.single_mut() else { return };
+
+    let label = match hovered.target {
+        MlpHoverTarget::None => { *vis = Visibility::Hidden; return; }
+        MlpHoverTarget::InputNode(i)  => format!("{}: {:.3}", INPUT_LABELS[i],  hovered.value),
+        MlpHoverTarget::OutputNode(o) => format!("{}: {:.3}", OUTPUT_LABELS[o], hovered.value),
+        MlpHoverTarget::Edge { input: i, output: o } =>
+            format!("{} → {}: {:.3}", INPUT_LABELS[i], OUTPUT_LABELS[o], hovered.value),
+    };
+
+    *vis = Visibility::Visible;
+    **text = label;
+    node.left = Val::Px(hovered.screen_pos.x - 150.0);
+    node.top  = Val::Px(hovered.screen_pos.y - 12.0);
+}
+
+fn activation_color(v: f32) -> Color {
+    // dark gray at zero, orange at +1, blue at -1
+    if v >= 0.0 {
+        Color::srgba(0.15 + v * 0.8, 0.15 + v * 0.55, 0.15 - v * 0.05, 0.95)
+    } else {
+        let t = v + 1.0;
+        Color::srgba(0.15 + t * 0.05, 0.15 + t * 0.25, 0.95 - t * 0.8, 0.95)
+    }
+}
+
+fn draw_mlp_visualization(
+    hovered: Res<HoveredAnimal>,
+    mlp_state: Res<CurrentMlpState>,
+    node_hover: Res<MlpHovered>,
+    layout: Res<MlpLayout>,
+    camera_q: Query<(&Camera, &GlobalTransform)>,
+    mut gizmos: Gizmos,
+) {
+    if hovered.0.is_none() || !mlp_state.valid {
+        return;
+    }
+    let data = hovered.0.as_ref().unwrap();
+    let Ok((camera, cam_transform)) = camera_q.single() else {
+        return;
+    };
+
+    let Ok(p0) = camera.viewport_to_world_2d(cam_transform, Vec2::ZERO) else {
+        return;
+    };
+    let Ok(p1) = camera.viewport_to_world_2d(cam_transform, Vec2::new(1.0, 0.0)) else {
+        return;
+    };
+    let px = (p1 - p0).length();
+
+    let x_in = layout.x_in;
+    let x_out = layout.x_out;
+    let y_top = layout.y_top;
+    let y_bot = layout.y_bot;
+    let node_r_in = px * 4.5;
+    let node_r_out = px * 6.5;
+
+    let to_world = |sx: f32, sy: f32| -> Option<Vec2> {
+        camera
+            .viewport_to_world_2d(cam_transform, Vec2::new(sx, sy))
+            .ok()
+    };
+
+    let genes = &data.genes;
+    let max_w = genes[..MLP_INPUTS * MLP_OUTPUTS]
+        .iter()
+        .map(|w| w.abs())
+        .fold(0.0f32, f32::max)
+        .max(1.0);
+
+    // Connections
+    for i in 0..MLP_INPUTS {
+        let iy = y_top + (i as f32 + 0.5) * (y_bot - y_top) / MLP_INPUTS as f32;
+        let Some(iw) = to_world(x_in, iy) else { continue };
+        for o in 0..MLP_OUTPUTS {
+            let oy = y_top + (o as f32 + 0.5) * (y_bot - y_top) / MLP_OUTPUTS as f32;
+            let Some(ow) = to_world(x_out, oy) else { continue };
+            let weight = genes[i * MLP_OUTPUTS + o];
+            let edge_hovered = node_hover.target == (MlpHoverTarget::Edge { input: i, output: o });
+            let alpha = if edge_hovered { 1.0 } else { (weight.abs() / max_w * 0.65).max(0.04) };
+            let color = if weight >= 0.0 {
+                Color::srgba(0.25, 0.5, 1.0, alpha)
+            } else {
+                Color::srgba(1.0, 0.3, 0.2, alpha)
+            };
+            gizmos.line_2d(iw, ow, color);
+            if edge_hovered {
+                // second pass at slight world-space offset for a thicker appearance
+                let perp = (ow - iw).perp().normalize_or_zero() * px * 1.5;
+                gizmos.line_2d(iw + perp, ow + perp, color);
+                gizmos.line_2d(iw - perp, ow - perp, color);
+            }
+        }
+    }
+
+    // Input nodes
+    for i in 0..MLP_INPUTS {
+        let iy = y_top + (i as f32 + 0.5) * (y_bot - y_top) / MLP_INPUTS as f32;
+        let Some(iw) = to_world(x_in, iy) else {
+            continue;
+        };
+        let color = activation_color(mlp_state.features[i].clamp(-1.0, 1.0));
+        let hovered_this = node_hover.target == MlpHoverTarget::InputNode(i);
+        let r = if hovered_this {
+            node_r_in * 1.6
+        } else {
+            node_r_in
+        };
+        gizmos.circle_2d(iw, r, color);
+    }
+
+    // Output nodes
+    for o in 0..MLP_OUTPUTS {
+        let oy = y_top + (o as f32 + 0.5) * (y_bot - y_top) / MLP_OUTPUTS as f32;
+        let Some(ow) = to_world(x_out, oy) else {
+            continue;
+        };
+        let t = (mlp_state.outputs[o].tanh() + 1.0) * 0.5;
+        let color = Color::srgba(0.9, 0.6 + t * 0.4, 0.1, 0.95);
+        let hovered_this = node_hover.target == MlpHoverTarget::OutputNode(o);
+        let r = if hovered_this {
+            node_r_out * 1.6
+        } else {
+            node_r_out
+        };
+        gizmos.circle_2d(ow, r, color);
     }
 }
 

@@ -4,6 +4,25 @@ use crate::creature::Diet;
 use crate::mlp::{Genome, MLP_INPUTS, mlp_movement};
 use crate::sense::{PerceivedAnimal, PerceivedCarcass, PerceivedPlant, Sense, Vision};
 
+pub fn compute_features(
+    vision_range: f32,
+    origin: Vec2,
+    forward: Vec2,
+    self_energy: f32,
+    world: &crate::sense::PerceptionWorld<'_>,
+) -> [f32; MLP_INPUTS] {
+    let vision = Vision { range: vision_range };
+    let sensed = vision.sense(origin, forward, world);
+    encode_perception_features(
+        &sensed.plants,
+        &sensed.animals,
+        &sensed.carcasses,
+        vision_range.max(1.0),
+        forward,
+        self_energy,
+    )
+}
+
 pub fn think_with_vision(
     vision: &Vision,
     genome: &Genome,
@@ -64,30 +83,30 @@ fn encode_perception_features(
     let mut features = [0.0f32; MLP_INPUTS];
     features[0] = plant_features[0];
     features[1] = plant_features[1];
-    features[2] = plant_features[2];
-    features[3] = plant_features[3];
-    features[4] = animal_features_carnivors[0];
-    features[5] = animal_features_carnivors[1];
-    features[6] = animal_features_carnivors[2];
-    features[7] = animal_features_carnivors[3];
-    features[8] = animal_features_carnivors[4];
-    features[9] = animal_features_herbivores[0];
-    features[10] = animal_features_herbivores[1];
-    features[11] = animal_features_herbivores[2];
-    features[12] = animal_features_herbivores[3];
-    features[13] = animal_features_herbivores[4];
-    features[14] = animal_features_omnivores[0];
-    features[15] = animal_features_omnivores[1];
-    features[16] = animal_features_omnivores[2];
-    features[17] = animal_features_omnivores[3];
-    features[18] = animal_features_omnivores[4];
-    features[19] = self_awareness_features[0];
-    features[20] = self_awareness_features[1];
-    features[21] = self_awareness_features[2];
-    features[22] = carcass_features[0];
-    features[23] = carcass_features[1];
-    features[24] = carcass_features[2];
-    features[25] = carcass_features[3];
+    // features[2] = plant_features[2];
+    // features[3] = plant_features[3];
+    // features[4] = animal_features_carnivors[0];
+    // features[5] = animal_features_carnivors[1];
+    // features[6] = animal_features_carnivors[2];
+    // features[7] = animal_features_carnivors[3];
+    // features[8] = animal_features_carnivors[4];
+    // features[9] = animal_features_herbivores[0];
+    // features[10] = animal_features_herbivores[1];
+    // features[11] = animal_features_herbivores[2];
+    // features[12] = animal_features_herbivores[3];
+    // features[13] = animal_features_herbivores[4];
+    // features[14] = animal_features_omnivores[0];
+    // features[15] = animal_features_omnivores[1];
+    // features[16] = animal_features_omnivores[2];
+    // features[17] = animal_features_omnivores[3];
+    // features[18] = animal_features_omnivores[4];
+    // features[19] = self_awareness_features[0];
+    // features[20] = self_awareness_features[1];
+    // features[21] = self_awareness_features[2];
+    // features[22] = carcass_features[0];
+    // features[23] = carcass_features[1];
+    // features[24] = carcass_features[2];
+    // features[25] = carcass_features[3];
     features
 }
 
