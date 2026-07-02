@@ -29,10 +29,10 @@ pub enum Diet {
 
 impl Diet {
     pub fn random(rng: &mut impl Rng) -> Self {
-        match rng.gen_range(0..1) {
+        match rng.gen_range(0..2) {
             0 => Self::Herbivore,
-            1 => Self::Omnivore,
-            2 => Self::Carnivore,
+            1 => Self::Carnivore,
+            2 => Self::Omnivore,
             _ => Self::Scavenger,
         }
     }

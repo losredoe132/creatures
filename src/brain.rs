@@ -11,7 +11,9 @@ pub fn compute_features(
     self_energy: f32,
     world: &crate::sense::PerceptionWorld<'_>,
 ) -> [f32; MLP_INPUTS] {
-    let vision = Vision { range: vision_range };
+    let vision = Vision {
+        range: vision_range,
+    };
     let sensed = vision.sense(origin, forward, world);
     encode_perception_features(
         &sensed.plants,
@@ -53,42 +55,18 @@ fn encode_perception_features(
     self_energy: f32,
 ) -> [f32; MLP_INPUTS] {
     let plant_features = encode_plant_features(perceived_plants, vision_range);
-    let carcass_features = encode_carcass_features(perceived_carcasses, vision_range);
 
-    let carnivore_animals: Vec<PerceivedAnimal> = perceived_animals
-        .iter()
-        .copied()
-        .filter(|animal| animal.diet == Diet::Carnivore)
-        .collect();
-
-    let animal_features_carnivors = encode_animal_features(&carnivore_animals, vision_range);
-
-    let herbivore_animals: Vec<PerceivedAnimal> = perceived_animals
-        .iter()
-        .copied()
-        .filter(|animal| animal.diet == Diet::Herbivore)
-        .collect();
-
-    let animal_features_herbivores = encode_animal_features(&herbivore_animals, vision_range);
-
-    let omnivore_animals: Vec<PerceivedAnimal> = perceived_animals
-        .iter()
-        .copied()
-        .filter(|animal| animal.diet == Diet::Omnivore)
-        .collect();
-
-    let animal_features_omnivores = encode_animal_features(&omnivore_animals, vision_range);
-    let self_awareness_features = encode_self_awareness_features(self_velocity, self_energy);
+    let animal_features = encode_animal_features(perceived_animals, vision_range);
 
     let mut features = [0.0f32; MLP_INPUTS];
     features[0] = plant_features[0];
     features[1] = plant_features[1];
-    // features[2] = plant_features[2];
-    // features[3] = plant_features[3];
-    // features[4] = animal_features_carnivors[0];
-    // features[5] = animal_features_carnivors[1];
-    // features[6] = animal_features_carnivors[2];
-    // features[7] = animal_features_carnivors[3];
+    features[2] = plant_features[3];
+    features[3] = animal_features[0];
+    features[4] = animal_features[1];
+    features[5] = animal_features[4];
+    //features[5] = animal_features_carnivors[2];
+    //features[6] = animal_features_carnivors[3];
     // features[8] = animal_features_carnivors[4];
     // features[9] = animal_features_herbivores[0];
     // features[10] = animal_features_herbivores[1];
@@ -127,8 +105,8 @@ fn encode_plant_features(perceived_plants: &[PerceivedPlant], vision_range: f32)
 
     nearest_plant
         .map(|plant| {
-            let normalized_relative =
-                (plant.relative_position / vision_range).clamp(Vec2::splat(-1.0), Vec2::splat(1.0));
+            let normalized_relative = (plant.relative_position / plant.distance)
+                .clamp(Vec2::splat(-1.0), Vec2::splat(1.0));
             [
                 normalized_relative.x,
                 normalized_relative.y,
@@ -172,7 +150,7 @@ fn encode_animal_features(perceived_animals: &[PerceivedAnimal], vision_range: f
 
     nearest_animal
         .map(|animal| {
-            let normalized_relative = (animal.relative_position / vision_range)
+            let normalized_relative = (animal.relative_position / animal.distance)
                 .clamp(Vec2::splat(-1.0), Vec2::splat(1.0));
             [
                 normalized_relative.x,

@@ -3,12 +3,13 @@ use nalgebra as na;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-pub const MLP_INPUTS: usize = 2;
+pub const MLP_INPUTS: usize = 6;
 pub const MLP_HIDDEN_1: usize = 12;
-pub const MLP_HIDDEN_2: usize = 9;
 pub const MLP_OUTPUTS: usize = 2;
 
-pub const GENOME_LEN: usize = MLP_INPUTS * MLP_OUTPUTS + MLP_OUTPUTS;
+pub const W1_SIZE: usize = MLP_INPUTS * MLP_HIDDEN_1;
+pub const W2_SIZE: usize = MLP_HIDDEN_1 * MLP_OUTPUTS;
+pub const GENOME_LEN: usize = W1_SIZE + MLP_HIDDEN_1 + W2_SIZE + MLP_OUTPUTS;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Genome {
@@ -18,7 +19,7 @@ pub struct Genome {
 #[allow(dead_code)]
 impl Genome {
     pub fn random(rng: &mut impl Rng) -> Self {
-        let genes = (0..GENOME_LEN).map(|_| rng.gen_range(-5.0..5.0)).collect();
+        let genes = (0..GENOME_LEN).map(|_| rng.gen_range(-1.0..1.0)).collect();
         Self { genes }
     }
 
@@ -41,55 +42,43 @@ pub struct MovementOutput {
     pub vector: Vec2,
 }
 
-pub fn mlp_movement(features: [f32; MLP_INPUTS], genome: &Genome) -> MovementOutput {
+pub struct MlpActivations {
+    pub hidden: [f32; MLP_HIDDEN_1],
+    pub output: [f32; MLP_OUTPUTS],
+}
+
+pub fn mlp_forward(features: [f32; MLP_INPUTS], genome: &Genome) -> MlpActivations {
     assert_eq!(genome.genes.len(), GENOME_LEN, "Genome length mismatch");
 
-    // x: 1xMLP_INPUTS
-    let x: na::RowSVector<f32, MLP_INPUTS> = na::RowSVector::from_row_slice(&features);
+    let x = na::RowSVector::<f32, MLP_INPUTS>::from_row_slice(&features);
 
-    // W1: MLP_INPUTS x MLP_OUTPUTS
-    let w1: na::SMatrix<f32, MLP_INPUTS, MLP_OUTPUTS> =
-        na::SMatrix::from_row_slice(&genome.genes[0..(MLP_INPUTS * MLP_OUTPUTS)]);
+    let w1 = na::SMatrix::<f32, MLP_INPUTS, MLP_HIDDEN_1>::from_row_slice(
+        &genome.genes[..W1_SIZE],
+    );
+    let b1 = na::RowSVector::<f32, MLP_HIDDEN_1>::from_row_slice(
+        &genome.genes[W1_SIZE..W1_SIZE + MLP_HIDDEN_1],
+    );
+    let hidden_act = (x * w1 + b1).map(|v| v.tanh());
 
-    // b1: 1xMLP_OUTPUTS
-    let b1_start = MLP_INPUTS * MLP_OUTPUTS;
-    let b1: na::RowSVector<f32, MLP_OUTPUTS> =
-        na::RowSVector::from_row_slice(&genome.genes[b1_start..b1_start + MLP_OUTPUTS]);
-    let y = x * w1+ b1*0.1;
+    let w2_start = W1_SIZE + MLP_HIDDEN_1;
+    let w2 = na::SMatrix::<f32, MLP_HIDDEN_1, MLP_OUTPUTS>::from_row_slice(
+        &genome.genes[w2_start..w2_start + W2_SIZE],
+    );
+    let b2_start = w2_start + W2_SIZE;
+    let b2 = na::RowSVector::<f32, MLP_OUTPUTS>::from_row_slice(
+        &genome.genes[b2_start..b2_start + MLP_OUTPUTS],
+    );
+    let y = hidden_act * w2 + b2;
 
-    // // hidden_1: 1xMLP_HIDDEN_1
-    // let hidden_1 = x * w1 + b1;
-    // let hidden_1_activated = hidden_1.map(|v| v.tanh());
+    MlpActivations {
+        hidden: std::array::from_fn(|i| hidden_act[(0, i)]),
+        output: [y[(0, 0)], y[(0, 1)]],
+    }
+}
 
-    // // W2: MLP_HIDDEN_1 x MLP_HIDDEN_2
-    // let w2_start = b1_start + MLP_HIDDEN_1;
-    // let w2: na::SMatrix<f32, MLP_HIDDEN_1, MLP_HIDDEN_2> = na::SMatrix::from_row_slice(
-    //     &genome.genes[w2_start..w2_start + MLP_HIDDEN_1 * MLP_HIDDEN_2],
-    // );
-
-    // // b2: 1xMLP_HIDDEN_2
-    // let b2_start = w2_start + MLP_HIDDEN_1 * MLP_HIDDEN_2;
-    // let b2: na::RowSVector<f32, MLP_HIDDEN_2> =
-    //     na::RowSVector::from_row_slice(&genome.genes[b2_start..b2_start + MLP_HIDDEN_2]);
-
-    // // hidden_2: 1xMLP_HIDDEN_2
-    // let hidden_2 = hidden_1_activated * w2 + b2;
-    // let hidden_2_activated = hidden_2.map(|v| v.tanh());
-
-    // // W3: MLP_HIDDEN_2 x MLP_OUTPUTS
-    // let w3_start = b2_start + MLP_HIDDEN_2;
-    // let w3: na::SMatrix<f32, MLP_HIDDEN_2, MLP_OUTPUTS> =
-    //     na::SMatrix::from_row_slice(&genome.genes[w3_start..w3_start + MLP_HIDDEN_2 * MLP_OUTPUTS]);
-
-    // // b3: 1xMLP_OUTPUTS
-    // let b3_start = w3_start + MLP_HIDDEN_2 * MLP_OUTPUTS;
-    // let b3: na::RowSVector<f32, MLP_OUTPUTS> =
-    //     na::RowSVector::from_row_slice(&genome.genes[b3_start..b3_start + MLP_OUTPUTS]);
-
-    // // y: 1xMLP_OUTPUTS
-    // let y = hidden_2_activated * w3 + b3;
-
+pub fn mlp_movement(features: [f32; MLP_INPUTS], genome: &Genome) -> MovementOutput {
+    let act = mlp_forward(features, genome);
     MovementOutput {
-        vector: Vec2::new(y[0], y[1]),
+        vector: Vec2::new(act.output[0], act.output[1]),
     }
 }

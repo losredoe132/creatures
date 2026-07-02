@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::brain::{compute_features, think_with_vision};
 use crate::config::SimulationConfig;
 use crate::creature::{Animal, Carcass, Diet, Plant};
-use crate::mlp::{MLP_INPUTS, MLP_OUTPUTS};
+use crate::mlp::{MLP_HIDDEN_1, MLP_INPUTS, MLP_OUTPUTS, W1_SIZE, mlp_forward};
 use crate::sense::{AnimalSnapshot, CarcassSnapshot, PerceptionWorld, PlantSnapshot};
 use crate::simulation::{GlobalFrameCounter, ManualZooSpawnEvent, PopulationSizeTracker};
 pub struct VisualizationPlugin;
@@ -79,12 +79,20 @@ struct HoveredAnimal(Option<HoveredAnimalData>);
 #[derive(Resource, Default)]
 struct SelectedAnimalId(Option<u64>);
 
-const INPUT_LABELS: [&str; MLP_INPUTS] = ["plant dx", "plant dy"];
+const INPUT_LABELS: [&str; MLP_INPUTS] = [
+    "plant dx",
+    "plant dy",
+    "plant_distance",
+    "animal_x",
+    "animal_y",
+    "animal_distance",
+];
 const OUTPUT_LABELS: [&str; MLP_OUTPUTS] = ["move x", "move y"];
 
 #[derive(Resource)]
 struct MlpLayout {
     x_in: f32,
+    x_hidden: f32,
     x_out: f32,
     y_top: f32,
     y_bot: f32,
@@ -94,6 +102,7 @@ impl Default for MlpLayout {
     fn default() -> Self {
         Self {
             x_in: 0.0,
+            x_hidden: 0.0,
             x_out: 0.0,
             y_top: 20.0,
             y_bot: 580.0,
@@ -104,6 +113,7 @@ impl Default for MlpLayout {
 #[derive(Resource, Default)]
 struct CurrentMlpState {
     features: [f32; MLP_INPUTS],
+    hidden: [f32; MLP_HIDDEN_1],
     outputs: [f32; MLP_OUTPUTS],
     valid: bool,
 }
@@ -113,8 +123,10 @@ enum MlpHoverTarget {
     #[default]
     None,
     InputNode(usize),
+    HiddenNode(usize),
     OutputNode(usize),
-    Edge { input: usize, output: usize },
+    EdgeInH { input: usize, hidden: usize },
+    EdgeHOut { hidden: usize, output: usize },
 }
 
 #[derive(Resource, Default)]
@@ -512,7 +524,11 @@ fn draw_world_boundary(mut gizmos: Gizmos, config: Res<SimulationConfig>) {
 
 fn draw_animal_perceptive_field(hovered: Res<HoveredAnimal>, mut gizmos: Gizmos) {
     let Some(data) = &hovered.0 else { return };
-    gizmos.circle_2d(data.position, data.vision_range, Color::srgba(0.2, 0.9, 1.0, 0.18));
+    gizmos.circle_2d(
+        data.position,
+        data.vision_range,
+        Color::srgba(0.2, 0.9, 1.0, 0.18),
+    );
 }
 
 fn draw_animal_movement_arrows(
@@ -686,17 +702,16 @@ fn refresh_mlp_state(
         &world,
     );
 
-    let genes = &data.genes;
-    for o in 0..MLP_OUTPUTS {
-        state.outputs[o] = genes
-            .get(MLP_INPUTS * MLP_OUTPUTS + o)
-            .copied()
-            .unwrap_or(0.0);
-        for i in 0..MLP_INPUTS {
-            state.outputs[o] += state.features[i] * genes[i * MLP_OUTPUTS + o];
-        }
+    if data.genes.len() == crate::mlp::GENOME_LEN {
+        use crate::mlp::Genome;
+        let genome = Genome { genes: data.genes.clone() };
+        let act = mlp_forward(state.features, &genome);
+        state.hidden = act.hidden;
+        state.outputs = act.output;
+        state.valid = true;
+    } else {
+        state.valid = false;
     }
-    state.valid = true;
 }
 
 fn compute_mlp_layout(
@@ -709,7 +724,8 @@ fn compute_mlp_layout(
     let h = window.height();
     let scale = window.scale_factor() as f32;
 
-    layout.x_in = w - 190.0;
+    layout.x_in = w - 240.0;
+    layout.x_hidden = w - 145.0;
     layout.x_out = w - 50.0;
     layout.y_bot = h - 20.0;
     layout.y_top = match panel_q.single() {
@@ -720,7 +736,11 @@ fn compute_mlp_layout(
 
 fn seg_dist(p: Vec2, a: Vec2, b: Vec2) -> f32 {
     let ab = b - a;
-    let t = if ab.dot(ab) > 0.0 { ((p - a).dot(ab) / ab.dot(ab)).clamp(0.0, 1.0) } else { 0.0 };
+    let t = if ab.dot(ab) > 0.0 {
+        ((p - a).dot(ab) / ab.dot(ab)).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
     (p - (a + ab * t)).length()
 }
 
@@ -732,49 +752,80 @@ fn detect_mlp_hover(
     mut hovered: ResMut<MlpHovered>,
 ) {
     hovered.target = MlpHoverTarget::None;
-    if !mlp_state.valid { return; }
+    if !mlp_state.valid {
+        return;
+    }
     let Ok(window) = windows.single() else { return };
-    let Some(cursor) = window.cursor_position() else { return };
+    let Some(cursor) = window.cursor_position() else {
+        return;
+    };
 
-    let x_in  = layout.x_in;
+    let x_in = layout.x_in;
+    let x_hidden = layout.x_hidden;
     let x_out = layout.x_out;
     let y_top = layout.y_top;
     let y_bot = layout.y_bot;
     let node_hit = 8.0f32;
-    let edge_hit = 5.0f32;
+    let edge_hit = 4.0f32;
 
-    let input_sy  = |i: usize| y_top + (i as f32 + 0.5) * (y_bot - y_top) / MLP_INPUTS  as f32;
+    let input_sy = |i: usize| y_top + (i as f32 + 0.5) * (y_bot - y_top) / MLP_INPUTS as f32;
+    let hidden_sy = |h: usize| y_top + (h as f32 + 0.5) * (y_bot - y_top) / MLP_HIDDEN_1 as f32;
     let output_sy = |o: usize| y_top + (o as f32 + 0.5) * (y_bot - y_top) / MLP_OUTPUTS as f32;
 
     // Nodes take priority over edges
     for i in 0..MLP_INPUTS {
         let sy = input_sy(i);
         if cursor.distance(Vec2::new(x_in, sy)) <= node_hit {
-            hovered.target    = MlpHoverTarget::InputNode(i);
-            hovered.value     = mlp_state.features[i];
+            hovered.target = MlpHoverTarget::InputNode(i);
+            hovered.value = mlp_state.features[i];
             hovered.screen_pos = Vec2::new(x_in, sy);
+            return;
+        }
+    }
+    for h in 0..MLP_HIDDEN_1 {
+        let sy = hidden_sy(h);
+        if cursor.distance(Vec2::new(x_hidden, sy)) <= node_hit {
+            hovered.target = MlpHoverTarget::HiddenNode(h);
+            hovered.value = mlp_state.hidden[h];
+            hovered.screen_pos = Vec2::new(x_hidden, sy);
             return;
         }
     }
     for o in 0..MLP_OUTPUTS {
         let sy = output_sy(o);
         if cursor.distance(Vec2::new(x_out, sy)) <= node_hit {
-            hovered.target    = MlpHoverTarget::OutputNode(o);
-            hovered.value     = mlp_state.outputs[o];
+            hovered.target = MlpHoverTarget::OutputNode(o);
+            hovered.value = mlp_state.outputs[o];
             hovered.screen_pos = Vec2::new(x_out, sy);
             return;
         }
     }
 
-    // Edge hit-test — weight is read directly from the selected animal's genome
+    // Edge hit-test — weights read from the selected animal's genome
     if let Some(data) = &animal.0 {
+        let genes = &data.genes;
+        // Input → Hidden (W1: genes[i * MLP_HIDDEN_1 + h])
         for i in 0..MLP_INPUTS {
             let a = Vec2::new(x_in, input_sy(i));
+            for h in 0..MLP_HIDDEN_1 {
+                let b = Vec2::new(x_hidden, hidden_sy(h));
+                if seg_dist(cursor, a, b) <= edge_hit {
+                    hovered.target = MlpHoverTarget::EdgeInH { input: i, hidden: h };
+                    hovered.value = genes.get(i * MLP_HIDDEN_1 + h).copied().unwrap_or(0.0);
+                    hovered.screen_pos = (a + b) * 0.5;
+                    return;
+                }
+            }
+        }
+        // Hidden → Output (W2: genes[W1_SIZE + MLP_HIDDEN_1 + h * MLP_OUTPUTS + o])
+        let w2_start = W1_SIZE + MLP_HIDDEN_1;
+        for h in 0..MLP_HIDDEN_1 {
+            let a = Vec2::new(x_hidden, hidden_sy(h));
             for o in 0..MLP_OUTPUTS {
                 let b = Vec2::new(x_out, output_sy(o));
                 if seg_dist(cursor, a, b) <= edge_hit {
-                    hovered.target     = MlpHoverTarget::Edge { input: i, output: o };
-                    hovered.value      = data.genes.get(i * MLP_OUTPUTS + o).copied().unwrap_or(0.0);
+                    hovered.target = MlpHoverTarget::EdgeHOut { hidden: h, output: o };
+                    hovered.value = genes.get(w2_start + h * MLP_OUTPUTS + o).copied().unwrap_or(0.0);
                     hovered.screen_pos = (a + b) * 0.5;
                     return;
                 }
@@ -788,21 +839,42 @@ fn update_mlp_tooltip(
     mut tooltip_q: Query<(&mut Node, &mut Visibility), With<MlpTooltip>>,
     mut text_q: Query<&mut Text, With<MlpTooltipText>>,
 ) {
-    let Ok((mut node, mut vis)) = tooltip_q.single_mut() else { return };
-    let Ok(mut text) = text_q.single_mut() else { return };
+    let Ok((mut node, mut vis)) = tooltip_q.single_mut() else {
+        return;
+    };
+    let Ok(mut text) = text_q.single_mut() else {
+        return;
+    };
 
     let label = match hovered.target {
-        MlpHoverTarget::None => { *vis = Visibility::Hidden; return; }
-        MlpHoverTarget::InputNode(i)  => format!("{}: {:.3}", INPUT_LABELS[i],  hovered.value),
+        MlpHoverTarget::None => {
+            *vis = Visibility::Hidden;
+            return;
+        }
+        MlpHoverTarget::InputNode(i) => format!("{}: {:.3}", INPUT_LABELS[i], hovered.value),
+        MlpHoverTarget::HiddenNode(h) => format!("hidden {}: {:.3}", h, hovered.value),
         MlpHoverTarget::OutputNode(o) => format!("{}: {:.3}", OUTPUT_LABELS[o], hovered.value),
-        MlpHoverTarget::Edge { input: i, output: o } =>
-            format!("{} → {}: {:.3}", INPUT_LABELS[i], OUTPUT_LABELS[o], hovered.value),
+        MlpHoverTarget::EdgeInH { input: i, hidden: h } => {
+            format!("{} → h{}: {:.3}", INPUT_LABELS[i], h, hovered.value)
+        }
+        MlpHoverTarget::EdgeHOut { hidden: h, output: o } => {
+            format!("h{} → {}: {:.3}", h, OUTPUT_LABELS[o], hovered.value)
+        }
     };
 
     *vis = Visibility::Visible;
     **text = label;
     node.left = Val::Px(hovered.screen_pos.x - 150.0);
-    node.top  = Val::Px(hovered.screen_pos.y - 12.0);
+    node.top = Val::Px(hovered.screen_pos.y - 12.0);
+}
+
+fn filled_circle(gizmos: &mut Gizmos, pos: Vec2, radius: f32, px: f32, color: Color) {
+    let mut r = px;
+    while r < radius {
+        gizmos.circle_2d(pos, r, color);
+        r += px;
+    }
+    gizmos.circle_2d(pos, radius, color);
 }
 
 fn activation_color(v: f32) -> Color {
@@ -840,11 +912,11 @@ fn draw_mlp_visualization(
     let px = (p1 - p0).length();
 
     let x_in = layout.x_in;
+    let x_hidden = layout.x_hidden;
     let x_out = layout.x_out;
     let y_top = layout.y_top;
     let y_bot = layout.y_bot;
-    let node_r_in = px * 4.5;
-    let node_r_out = px * 6.5;
+    let node_r = px * 3.0;
 
     let to_world = |sx: f32, sy: f32| -> Option<Vec2> {
         camera
@@ -852,69 +924,85 @@ fn draw_mlp_visualization(
             .ok()
     };
 
-    let genes = &data.genes;
-    let max_w = genes[..MLP_INPUTS * MLP_OUTPUTS]
-        .iter()
-        .map(|w| w.abs())
-        .fold(0.0f32, f32::max)
-        .max(1.0);
+    let input_wy = |i: usize| {
+        to_world(x_in, y_top + (i as f32 + 0.5) * (y_bot - y_top) / MLP_INPUTS as f32)
+    };
+    let hidden_wy = |h: usize| {
+        to_world(x_hidden, y_top + (h as f32 + 0.5) * (y_bot - y_top) / MLP_HIDDEN_1 as f32)
+    };
+    let output_wy = |o: usize| {
+        to_world(x_out, y_top + (o as f32 + 0.5) * (y_bot - y_top) / MLP_OUTPUTS as f32)
+    };
 
-    // Connections
+    let genes = &data.genes;
+
+    let draw_edge = |gizmos: &mut Gizmos, a: Vec2, b: Vec2, weight: f32, max_w: f32, highlighted: bool| {
+        let alpha = if highlighted {
+            1.0
+        } else {
+            (weight.abs() / max_w * 0.2).max(0.03)
+        };
+        let color = if weight >= 0.0 {
+            Color::srgba(0.3, 0.55, 1.0, alpha)
+        } else {
+            Color::srgba(1.0, 0.35, 0.2, alpha)
+        };
+        gizmos.line_2d(a, b, color);
+        if highlighted {
+            let perp = (b - a).perp().normalize_or_zero() * px * 1.5;
+            gizmos.line_2d(a + perp, b + perp, color);
+            gizmos.line_2d(a - perp, b - perp, color);
+        }
+    };
+
+    // W1: Input → Hidden
+    let max_w1 = genes[..W1_SIZE].iter().map(|w| w.abs()).fold(0.0f32, f32::max).max(1.0);
     for i in 0..MLP_INPUTS {
-        let iy = y_top + (i as f32 + 0.5) * (y_bot - y_top) / MLP_INPUTS as f32;
-        let Some(iw) = to_world(x_in, iy) else { continue };
+        let Some(iw) = input_wy(i) else { continue };
+        for h in 0..MLP_HIDDEN_1 {
+            let Some(hw) = hidden_wy(h) else { continue };
+            let weight = genes[i * MLP_HIDDEN_1 + h];
+            let hl = node_hover.target == MlpHoverTarget::EdgeInH { input: i, hidden: h };
+            draw_edge(&mut gizmos, iw, hw, weight, max_w1, hl);
+        }
+    }
+
+    // W2: Hidden → Output
+    let w2_start = W1_SIZE + MLP_HIDDEN_1;
+    let max_w2 = genes[w2_start..w2_start + crate::mlp::W2_SIZE].iter().map(|w| w.abs()).fold(0.0f32, f32::max).max(1.0);
+    for h in 0..MLP_HIDDEN_1 {
+        let Some(hw) = hidden_wy(h) else { continue };
         for o in 0..MLP_OUTPUTS {
-            let oy = y_top + (o as f32 + 0.5) * (y_bot - y_top) / MLP_OUTPUTS as f32;
-            let Some(ow) = to_world(x_out, oy) else { continue };
-            let weight = genes[i * MLP_OUTPUTS + o];
-            let edge_hovered = node_hover.target == (MlpHoverTarget::Edge { input: i, output: o });
-            let alpha = if edge_hovered { 1.0 } else { (weight.abs() / max_w * 0.65).max(0.04) };
-            let color = if weight >= 0.0 {
-                Color::srgba(0.25, 0.5, 1.0, alpha)
-            } else {
-                Color::srgba(1.0, 0.3, 0.2, alpha)
-            };
-            gizmos.line_2d(iw, ow, color);
-            if edge_hovered {
-                // second pass at slight world-space offset for a thicker appearance
-                let perp = (ow - iw).perp().normalize_or_zero() * px * 1.5;
-                gizmos.line_2d(iw + perp, ow + perp, color);
-                gizmos.line_2d(iw - perp, ow - perp, color);
-            }
+            let Some(ow) = output_wy(o) else { continue };
+            let weight = genes[w2_start + h * MLP_OUTPUTS + o];
+            let hl = node_hover.target == MlpHoverTarget::EdgeHOut { hidden: h, output: o };
+            draw_edge(&mut gizmos, hw, ow, weight, max_w2, hl);
         }
     }
 
     // Input nodes
     for i in 0..MLP_INPUTS {
-        let iy = y_top + (i as f32 + 0.5) * (y_bot - y_top) / MLP_INPUTS as f32;
-        let Some(iw) = to_world(x_in, iy) else {
-            continue;
-        };
+        let Some(iw) = input_wy(i) else { continue };
         let color = activation_color(mlp_state.features[i].clamp(-1.0, 1.0));
-        let hovered_this = node_hover.target == MlpHoverTarget::InputNode(i);
-        let r = if hovered_this {
-            node_r_in * 1.6
-        } else {
-            node_r_in
-        };
-        gizmos.circle_2d(iw, r, color);
+        let r = if node_hover.target == MlpHoverTarget::InputNode(i) { node_r * 1.5 } else { node_r };
+        filled_circle(&mut gizmos, iw, r, px, color);
+    }
+
+    // Hidden nodes
+    for h in 0..MLP_HIDDEN_1 {
+        let Some(hw) = hidden_wy(h) else { continue };
+        let color = activation_color(mlp_state.hidden[h].clamp(-1.0, 1.0));
+        let r = if node_hover.target == MlpHoverTarget::HiddenNode(h) { node_r * 1.5 } else { node_r };
+        filled_circle(&mut gizmos, hw, r, px, color);
     }
 
     // Output nodes
     for o in 0..MLP_OUTPUTS {
-        let oy = y_top + (o as f32 + 0.5) * (y_bot - y_top) / MLP_OUTPUTS as f32;
-        let Some(ow) = to_world(x_out, oy) else {
-            continue;
-        };
+        let Some(ow) = output_wy(o) else { continue };
         let t = (mlp_state.outputs[o].tanh() + 1.0) * 0.5;
         let color = Color::srgba(0.9, 0.6 + t * 0.4, 0.1, 0.95);
-        let hovered_this = node_hover.target == MlpHoverTarget::OutputNode(o);
-        let r = if hovered_this {
-            node_r_out * 1.6
-        } else {
-            node_r_out
-        };
-        gizmos.circle_2d(ow, r, color);
+        let r = if node_hover.target == MlpHoverTarget::OutputNode(o) { node_r * 1.5 } else { node_r };
+        filled_circle(&mut gizmos, ow, r, px, color);
     }
 }
 

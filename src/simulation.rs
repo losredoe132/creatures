@@ -683,7 +683,10 @@ fn think_animals(
             &world,
         );
 
-        let new_velocity = movement * config.tuning.animal_max_speed.max(0.0);
+        let new_velocity = (1.0 - config.tuning.animal_inertia)
+            * movement
+            * config.tuning.animal_max_speed.max(0.0)
+            + animal.velocity * config.tuning.animal_inertia;
         animal.set_velocity(new_velocity);
     }
 }
