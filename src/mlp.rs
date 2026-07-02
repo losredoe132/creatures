@@ -3,7 +3,7 @@ use nalgebra as na;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-pub const MLP_INPUTS: usize = 6;
+pub const MLP_INPUTS: usize = 9;
 pub const MLP_HIDDEN_1: usize = 12;
 pub const MLP_OUTPUTS: usize = 2;
 

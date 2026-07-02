@@ -56,16 +56,35 @@ fn encode_perception_features(
 ) -> [f32; MLP_INPUTS] {
     let plant_features = encode_plant_features(perceived_plants, vision_range);
 
+    let perceived_animals_herbivors: Vec<PerceivedAnimal> = perceived_animals
+        .iter()
+        .filter(|animal| animal.diet == Diet::Herbivore)
+        .cloned()
+        .collect();
+    let perceived_animals_carnivors: Vec<PerceivedAnimal> = perceived_animals
+        .iter()
+        .filter(|animal| animal.diet == Diet::Carnivore)
+        .cloned()
+        .collect();
+
+    let animal_features_herbivors =
+        encode_animal_features(&perceived_animals_herbivors, vision_range);
+    let animal_features_carnivors =
+        encode_animal_features(&perceived_animals_carnivors, vision_range);
+
     let animal_features = encode_animal_features(perceived_animals, vision_range);
 
     let mut features = [0.0f32; MLP_INPUTS];
     features[0] = plant_features[0];
     features[1] = plant_features[1];
     features[2] = plant_features[3];
-    features[3] = animal_features[0];
-    features[4] = animal_features[1];
-    features[5] = animal_features[4];
-    //features[5] = animal_features_carnivors[2];
+    features[3] = animal_features_herbivors[0];
+    features[4] = animal_features_herbivors[1];
+    features[5] = animal_features_herbivors[4];
+    features[6] = animal_features_carnivors[0];
+    features[7] = animal_features_carnivors[1];
+    features[8] = animal_features_carnivors[4];
+    //features[5] = animal_features_carnivors[2];animanimal_featuresal_features
     //features[6] = animal_features_carnivors[3];
     // features[8] = animal_features_carnivors[4];
     // features[9] = animal_features_herbivores[0];

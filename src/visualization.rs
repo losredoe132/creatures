@@ -82,10 +82,13 @@ struct SelectedAnimalId(Option<u64>);
 const INPUT_LABELS: [&str; MLP_INPUTS] = [
     "plant dx",
     "plant dy",
-    "plant_distance",
-    "animal_x",
-    "animal_y",
-    "animal_distance",
+    "plant energy",
+    "herb dx",
+    "herb dy",
+    "herb dist",
+    "carn dx",
+    "carn dy",
+    "carn dist",
 ];
 const OUTPUT_LABELS: [&str; MLP_OUTPUTS] = ["move x", "move y"];
 

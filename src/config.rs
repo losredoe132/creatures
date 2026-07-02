@@ -16,6 +16,7 @@ pub struct SpawnConfig {
 #[derive(Resource, Debug, Clone, Copy)]
 pub struct TuningConfig {
     pub plant_consume_per_collision: f32,
+    pub carnivore_consume_per_collision: f32,
     pub herbivore_metabolism_ratio: f32,
     pub carnivore_metabolism_ratio: f32,
     pub omnivore_metabolism_ratio: f32,
@@ -68,6 +69,7 @@ impl TuningConfig {
                 "PLANT_CONSUME_PER_COLLISION",
                 read_env_f32("PLANT_CONSUME_PER_CELL", 20.0),
             ),
+            carnivore_consume_per_collision: read_env_f32("CARNIVORE_CONSUME_PER_COLLISION", 30.0),
             herbivore_metabolism_ratio: read_env_f32("HERBIVORE_METABOLISM_RATIO", 1.4),
             carnivore_metabolism_ratio: read_env_f32("CARNIVORE_METABOLISM_RATIO", 1.1),
             omnivore_metabolism_ratio: read_env_f32("OMNIVORE_METABOLISM_RATIO", 0.6),

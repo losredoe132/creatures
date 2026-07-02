@@ -693,9 +693,15 @@ fn think_animals(
 
 fn calculate_energy_drain(animal: &Animal, config: &SimulationConfig, delta_secs: f32) -> f32 {
     let speed_ratio = (animal.velocity().length() / config.tuning.animal_max_speed).max(0.0);
-    let speed_drain = config.tuning.animal_speed_energy_drain_per_sec * speed_ratio;
+    let speed_ratio_nonlinear =
+        calculate_nonlinear_speed_ratio(speed_ratio, config.tuning.animal_speed_exponent);
+    let speed_drain = config.tuning.animal_speed_energy_drain_per_sec * speed_ratio_nonlinear;
     let brain_drain = calculate_brain_drain(&animal.genome, config);
     (config.tuning.animal_base_energy_drain_per_sec + speed_drain + brain_drain) * delta_secs
+}
+
+fn calculate_nonlinear_speed_ratio(speed_ratio: f32, exponent: f32) -> f32 {
+    speed_ratio + exponent.powf(speed_ratio) - 1.0
 }
 
 fn calculate_brain_drain(genome: &Genome, config: &SimulationConfig) -> f32 {
@@ -1003,6 +1009,7 @@ fn handle_object_collision(
         consume_per_collision > 0.0,
         "plant_consume_per_collision must be greater than 0.0"
     );
+    let carnivore_consume_per_collision = config.tuning.carnivore_consume_per_collision.max(0.0);
 
     let mut animal_gain_by_entity: HashMap<Entity, f32> = HashMap::new();
     let mut plant_taken_by_entity: HashMap<Entity, f32> = HashMap::new();
@@ -1168,7 +1175,7 @@ fn handle_object_collision(
                 continue;
             }
 
-            let taken = consume_per_collision.min(remaining_energy);
+            let taken = carnivore_consume_per_collision.min(remaining_energy);
             if taken <= 0.0 {
                 continue;
             }
